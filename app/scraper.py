@@ -6,18 +6,17 @@ from .models import Noticia
 from . import db
 
 def buscar_noticias():
-    # Exemplo: altere a URL e a lógica conforme a estrutura do site de notícias
-    url = "https://www.exemplo.com/noticias"
+    url = "https://g1.globo.com/rss/g1/economia/"
     response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, 'xml')
     
     noticias_encontradas = []
-    for artigo in soup.find_all('article'):
-        titulo = artigo.find('h2').get_text(strip=True)
-        link = artigo.find('a')['href']
-        # Extraia ou defina o conteúdo e data conforme o HTML
-        conteudo = "Conteúdo de exemplo"  
-        data = datetime.now()
+    for item in soup.find_all('item'):
+        titulo = item.find('title').get_text(strip=True)
+        link = item.find('link').get_text(strip=True)
+        conteudo = item.find('description').get_text(strip=True) if item.find('description') else "Sem descrição"
+        data_str = item.find('pubDate').get_text(strip=True)
+        data = datetime.strptime(data_str, "%a, %d %b %Y %H:%M:%S %z")
         
         noticia = Noticia(
             titulo=titulo,
@@ -27,10 +26,20 @@ def buscar_noticias():
         )
         noticias_encontradas.append(noticia)
     
-    # Salva as novas notícias evitando duplicatas
+    # Debug e salvamento
+    print(f"Encontradas {len(noticias_encontradas)} notícias novas")
     for noticia in noticias_encontradas:
-        if not Noticia.query.filter_by(url=noticia.url).first():
+        existente = Noticia.query.filter_by(url=noticia.url).first()
+        if not existente:
+            print(f"Salvando: {noticia.titulo} - {noticia.url}")
             db.session.add(noticia)
-    db.session.commit()
+        else:
+            print(f"Já existe: {noticia.titulo}")
+    try:
+        db.session.commit()
+        print("Commit bem-sucedido!")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro no commit: {e}")
     
     return noticias_encontradas
