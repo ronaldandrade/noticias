@@ -1,24 +1,32 @@
 <!-- app/templates/index.html -->
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Notícias</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Últimas Notícias</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h1>Últimas Notícias</h1>
-    <a href="{{ url_for('atualizar') }}">Atualizar Notícias</a>
-    <ul>
-    {% for noticia in noticias %}
-        <li>
-            <h2>{{ noticia.titulo }}</h2>
-            <p>{{ noticia.conteudo }}</p>
-            <small>{{ noticia.data_publicacao.strftime('%d/%m/%Y %H:%M') }}</small>
-            <a href="{{ noticia.url }}" target="_blank">Ler mais</a>
-        </li>
-    {% else %}
-        <li>Nenhuma notícia encontrada.</li>
-    {% endfor %}
-    </ul>
+    <header>
+        <h1>Últimas Notícias</h1>
+        <a href="/atualizar" class="btn-atualizar">Atualizar Notícias</a>
+    </header>
+    <main>
+        <section class="noticias-container">
+            {% for noticia in noticias %}
+                <article class="noticia-card">
+                    <h2>{{ noticia.titulo }}</h2>
+                    <p>{{ noticia.conteudo }}</p>
+                    <a href="{{ noticia.url }}" target="_blank" class="btn-leia-mais">Leia Mais</a>
+                    <small>{{ noticia.data_publicacao.strftime('%d/%m/%Y %H:%M') }}</small>
+                </article>
+            {% endfor %}
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2025 - Feito com groove pelo Grokzera</p>
+    </footer>
 </body>
 </html>

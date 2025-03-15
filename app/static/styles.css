@@ -1,0 +1,133 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;}
+
+body {
+    background: linear-gradient(135deg, #1e1e2f 0%, #2a2a4a 100%);
+    color: #f0f0f0;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    background: #0d0d1a;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+header h1 {
+    font-size: 2.5em;
+    color: #00d4ff;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.btn-atualizar {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: #ff007a;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 25px;
+    transition: transform 0.3s, background 0.3s;
+}
+
+.btn-atualizar:hover {
+    background: #ff4da6;
+    transform: scale(1.05);
+}
+
+main {
+    flex: 1;
+    padding: 20px;
+}
+
+.noticias-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.noticia-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.noticia-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
+}
+
+.noticia-card h2 {
+    font-size: 1.5em;
+    color: #00d4ff;
+    margin-bottom: 10px;
+}
+
+.noticia-card p {
+    font-size: 1em;
+    color: #d0d0d0;
+    margin-bottom: 15px;
+}
+
+.btn-leia-mais {
+    display: inline-block;
+    padding: 8px 15px;
+    background: #00d4ff;
+    color: #0d0d1a;
+    text-decoration: none;
+    border-radius: 20px;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.btn-leia-mais:hover {
+    background: #66e6ff;
+}
+
+.noticia-card small {
+    display: block;
+    color: #a0a0a0;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
+
+footer {
+    background: #0d0d1a;
+    padding: 10px;
+    text-align: center;
+    font-size: 0.9em;
+    color: #a0a0a0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Responsividade */
+@media (max-width: 600px) {
+    header h1 {
+        font-size: 1.8em;
+    }
+
+    .noticia-card {
+        padding: 15px;
+    }
+
+    .noticia-card h2 {
+        font-size: 1.2em;
+    }
+
+    .btn-atualizar, .btn-leia-mais {
+        padding: 8px 15px;
+    }
+}
