@@ -1,0 +1,24 @@
+<!-- app/templates/index.html -->
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Notícias</title>
+</head>
+<body>
+    <h1>Últimas Notícias</h1>
+    <a href="{{ url_for('atualizar') }}">Atualizar Notícias</a>
+    <ul>
+    {% for noticia in noticias %}
+        <li>
+            <h2>{{ noticia.titulo }}</h2>
+            <p>{{ noticia.conteudo }}</p>
+            <small>{{ noticia.data_publicacao.strftime('%d/%m/%Y %H:%M') }}</small>
+            <a href="{{ noticia.url }}" target="_blank">Ler mais</a>
+        </li>
+    {% else %}
+        <li>Nenhuma notícia encontrada.</li>
+    {% endfor %}
+    </ul>
+</body>
+</html>
