@@ -26,14 +26,14 @@
                 <article class="noticia-card">
                     <h2>{{ noticia.titulo }}</h2>
                     <p>{{ noticia.conteudo[:100] + '...' if noticia.conteudo|length > 100 else noticia.conteudo }}</p>
-                    <a href="{{ url_for('noticia', id=noticia.id) }}" class="btn-leia-mais">Ver Mais</a>
+                    <a href="{{ url_for('noticia_detalhe', id=noticia.id) }}" class="btn-leia-mais">Ver Mais</a>
                     <small>{{ noticia.data_publicacao.strftime('%d/%m/%Y %H:%M') }}</small>
                 </article>
             {% endfor %}
         </section>
     </main>
     <footer>
-        <p>© 2025 - Feito com groove pelo Grokzera</p>
+        <p>© 2025 - Made in China</p>
     </footer>
 </body>
 </html>
