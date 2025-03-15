@@ -32,7 +32,7 @@ def index():
     
     noticias = query.order_by(Noticia.data_publicacao.desc()).all()
     print(f"Notícias carregadas do banco: {len(noticias)}")
-    for n in noticias[:5]:  # Mostra as 5 primeiras pra debug
+    for n in noticias[:5]:
         print(f"Notícia: {n.titulo} - {n.data_publicacao}")
     
     return render_template('index.html', noticias=noticias)

@@ -107,7 +107,7 @@ main {
     backdrop-filter: blur(10px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s, box-shadow 0.3s;
-    height: 250px; /* Cards pequenos */
+    height: 350px;
     display: flex;
     flex-direction: column;
     gap: 10px;
