@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ noticia.titulo }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>{{ noticia.titulo }}</h1>
+        <a href="/" class="btn-voltar">Voltar</a>
+    </header>
+    <main>
+        <section class="noticia-detalhe">
+            <p>{{ noticia.conteudo }}</p>
+            <a href="{{ noticia.url }}" target="_blank" class="btn-leia-mais">Leia no Site</a>
+            <small>{{ noticia.data_publicacao.strftime('%d/%m/%Y %H:%M') }}</small>
+        </section>
+    </main>
+    <footer>
+        <p>© 2025 - Feito com groove pelo Grokzera</p>
+    </footer>
+</body>
+</html>

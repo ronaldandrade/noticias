@@ -2,7 +2,8 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;}
+    font-family: 'Arial', sans-serif;
+}
 
 body {
     background: linear-gradient(135deg, #1e1e2f 0%, #2a2a4a 100%);
@@ -27,7 +28,7 @@ header h1 {
     letter-spacing: 2px;
 }
 
-.btn-atualizar {
+.btn-atualizar, .btn-voltar {
     display: inline-block;
     margin-top: 10px;
     padding: 10px 20px;
@@ -38,7 +39,7 @@ header h1 {
     transition: transform 0.3s, background 0.3s;
 }
 
-.btn-atualizar:hover {
+.btn-atualizar:hover, .btn-voltar:hover {
     background: #ff4da6;
     transform: scale(1.05);
 }
@@ -46,6 +47,49 @@ header h1 {
 main {
     flex: 1;
     padding: 20px;
+}
+
+.filtro-container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.filtro-container label {
+    color: #00d4ff;
+    font-weight: bold;
+}
+
+.filtro-container input {
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #f0f0f0;
+}
+
+.filtro-container input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-filtrar {
+    padding: 8px 15px;
+    background: #ff007a;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-filtrar:hover {
+    background: #ff4da6;
 }
 
 .noticias-container {
@@ -63,6 +107,10 @@ main {
     backdrop-filter: blur(10px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s, box-shadow 0.3s;
+    height: 250px; /* Cards pequenos */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .noticia-card:hover {
@@ -71,26 +119,29 @@ main {
 }
 
 .noticia-card h2 {
-    font-size: 1.5em;
+    font-size: 1.3em;
     color: #00d4ff;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
+    line-height: 1.2;
 }
 
 .noticia-card p {
-    font-size: 1em;
+    font-size: 0.9em;
     color: #d0d0d0;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
+    flex-grow: 1;
 }
 
 .btn-leia-mais {
     display: inline-block;
-    padding: 8px 15px;
+    padding: 6px 12px;
     background: #00d4ff;
     color: #0d0d1a;
     text-decoration: none;
     border-radius: 20px;
     font-weight: bold;
     transition: background 0.3s;
+    align-self: flex-start;
 }
 
 .btn-leia-mais:hover {
@@ -98,10 +149,24 @@ main {
 }
 
 .noticia-card small {
-    display: block;
+    font-size: 0.8em;
     color: #a0a0a0;
-    font-size: 0.9em;
-    margin-top: 10px;
+}
+
+.noticia-detalhe {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.noticia-detalhe p {
+    font-size: 1.1em;
+    color: #d0d0d0;
+    margin-bottom: 15px;
 }
 
 footer {
@@ -121,13 +186,19 @@ footer {
 
     .noticia-card {
         padding: 15px;
+        height: 200px; /* Menor ainda em mobile */
     }
 
     .noticia-card h2 {
-        font-size: 1.2em;
+        font-size: 1.1em;
     }
 
-    .btn-atualizar, .btn-leia-mais {
+    .btn-atualizar, .btn-voltar, .btn-leia-mais {
         padding: 8px 15px;
+    }
+
+    .filtro-container {
+        flex-direction: column;
+        gap: 10px;
     }
 }

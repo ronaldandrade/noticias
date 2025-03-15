@@ -1,32 +1,39 @@
-<!-- app/templates/index.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Últimas Notícias</title>
+    <title>Notícias Maneiras</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
     <header>
-        <h1>Últimas Notícias</h1>
+        <h1>Notícias Maneiras</h1>
         <a href="/atualizar" class="btn-atualizar">Atualizar Notícias</a>
     </header>
     <main>
+        <section class="filtro-container">
+            <form method="GET" action="/">
+                <label for="data">A partir de:</label>
+                <input type="date" id="data" name="data">
+                <label for="assunto">Assunto:</label>
+                <input type="text" id="assunto" name="assunto" placeholder="Digite um termo">
+                <button type="submit" class="btn-filtrar">Filtrar</button>
+            </form>
+        </section>
         <section class="noticias-container">
             {% for noticia in noticias %}
                 <article class="noticia-card">
                     <h2>{{ noticia.titulo }}</h2>
-                    <p>{{ noticia.conteudo }}</p>
-                    <a href="{{ noticia.url }}" target="_blank" class="btn-leia-mais">Leia Mais</a>
+                    <p>{{ noticia.conteudo[:100] + '...' if noticia.conteudo|length > 100 else noticia.conteudo }}</p>
+                    <a href="{{ url_for('noticia', id=noticia.id) }}" class="btn-leia-mais">Ver Mais</a>
                     <small>{{ noticia.data_publicacao.strftime('%d/%m/%Y %H:%M') }}</small>
                 </article>
             {% endfor %}
         </section>
     </main>
     <footer>
-        <p>&copy; 2025 - Feito com groove pelo Grokzera</p>
+        <p>© 2025 - Feito com groove pelo Grokzera</p>
     </footer>
 </body>
 </html>
