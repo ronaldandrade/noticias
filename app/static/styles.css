@@ -92,6 +92,20 @@ main {
     background: #ff4da6;
 }
 
+.btn-limpar {
+    font-size: 12px;
+    padding: 8px 15px;
+    background: #ffcc00;
+    color: #0d0d1a;
+    text-decoration: none;
+    border-radius: 20px;
+    transition: background 0.3s;
+}
+
+.btn-limpar:hover {
+    background: #ffe066;
+}
+
 .noticias-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -177,6 +191,7 @@ footer {
     color: #a0a0a0;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 
 /* Responsividade */
 @media (max-width: 600px) {
