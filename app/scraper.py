@@ -16,7 +16,8 @@ def buscar_noticias():
     
     for nome, url in fontes.items():
         response = requests.get(url)
-        soup = BeautifulSoup(response.text, 'xml')
+        response.encoding = 'utf-8'
+        soup = BeautifulSoup(response.text, 'xml', from_encoding='utf-8')
         
         for item in soup.find_all('item'):
             titulo = item.find('title').get_text(strip=True)
