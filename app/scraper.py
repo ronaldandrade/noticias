@@ -7,7 +7,7 @@ from . import db
 def buscar_noticias():
     fontes = {
         "G1 Economia": "https://g1.globo.com/rss/g1/economia/",
-        "UOL Notícias": "https://feeds.folha.uol.com.br/mercado/rss091.xml",
+        # "UOL Notícias": "https://feeds.folha.uol.com.br/mercado/rss091.xml",
         "exame": "https://exame.com/feed/",
         "NY times": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
     }

@@ -2,3 +2,4 @@ venv
 schema.db
 pyvenv.cfg
 __pycache__
+*.pyc
