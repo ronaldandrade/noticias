@@ -192,6 +192,30 @@ footer {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* DASHBOARD    */
+.dashboard-container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+.btn-dashboard {
+    display: inline-block;
+    margin-top: 10px;
+    margin-left: 10px;
+    padding: 10px 20px;
+    background: #00d4ff;
+    color: #0d0d1a;
+    text-decoration: none;
+    border-radius: 25px;
+    transition: background 0.3s;
+}
+
+.btn-dashboard:hover {
+    background: #66e6ff;
+}
 
 /* Responsividade */
 @media (max-width: 600px) {

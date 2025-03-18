@@ -4,6 +4,10 @@ from .scraper import buscar_noticias
 from flask import current_app as app
 from datetime import datetime, timedelta
 from . import db
+import plotly.express as px
+from collections import Counter
+import re
+import pandas as pd
 
 @app.route('/', methods=['GET'])
 def index():
@@ -45,3 +49,17 @@ def atualizar():
 def noticia_detalhe(id):
     noticia = Noticia.query.get_or_404(id)
     return render_template('noticia.html', noticia=noticia)
+
+@app.route('/dashboard')
+def dashboard():
+    noticias = Noticia.query.all()
+    titulos = [n.titulo.lower() for n in noticias]
+    palavras = ' '.join(titulos).split()
+    palavras = [re.sub(r'[^\w\s]', '', p) for p in palavras if len(p) > 3]
+    contagem = Counter(palavras).most_common(10)
+    
+    df = pd.DataFrame(contagem, columns=['Assunto', 'Frequência'])
+    fig = px.bar(df, x='Assunto', y='Frequência', title='Top 10 Assuntos nas Notícias')
+    graph_html = fig.to_html(full_html=False)
+    
+    return render_template('dashboard.html', graph_html=graph_html)
