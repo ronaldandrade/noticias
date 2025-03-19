@@ -33,8 +33,7 @@
                 {% for item in top_assuntos %}
                     <li class="ranking-item">
                         <span class="ranking-position">{{ loop.index }}</span>
-                        <a href="{{ url_for('index', assunto=item.assunto) }}" class="ranking-assunto">{{ item.assunto }}</a>
-                        <span class="ranking-frequencia">{{ item.frequencia }} menções</span>
+                        <a href="{{ url_for('main.index', assunto=item.assunto) }}" class="ranking-assunto">{{ item.assunto }}</a>                        <span class="ranking-frequencia">{{ item.frequencia }} menções</span>
                     </li>
                 {% endfor %}
             </ul>

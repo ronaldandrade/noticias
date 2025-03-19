@@ -1,15 +1,17 @@
-from flask import render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, request
 from .models import Noticia
 from .scraper import buscar_noticias
-from flask import current_app as app
+from . import db  # Só importa db, não app
 from datetime import datetime, timedelta
-from . import db
 import nltk
 from nltk import trigrams
 from nltk.corpus import stopwords
 from collections import Counter
 
-@app.route('/', methods=['GET'])
+# Cria o Blueprint
+bp = Blueprint('main', __name__)
+
+@bp.route('/', methods=['GET'])
 def index():
     data_filtro = request.args.get('data', None)
     assunto_filtro = request.args.get('assunto', None)
@@ -42,17 +44,17 @@ def index():
     noticias = query.order_by(Noticia.data_publicacao.desc()).limit(15).all()
     return render_template('index.html', noticias=noticias)
 
-@app.route('/atualizar')
+@bp.route('/atualizar')
 def atualizar():
     buscar_noticias()
-    return redirect(url_for('index'))
+    return redirect(url_for('main.index'))
 
-@app.route('/noticia/<int:id>')
+@bp.route('/noticia/<int:id>')
 def noticia_detalhe(id):
     noticia = Noticia.query.get_or_404(id)
     return render_template('noticia.html', noticia=noticia)
 
-@app.route('/dashboard', methods=['GET'])
+@bp.route('/dashboard', methods=['GET'])
 def dashboard():
     data_filtro = request.args.get('data', None)
     assunto_filtro = request.args.get('assunto', None)

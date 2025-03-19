@@ -34,9 +34,7 @@
                 <article class="noticia-card">
                     <h2>{{ noticia.titulo }}</h2>
                     <p>{{ noticia.conteudo[:100] + '...' if noticia.conteudo|length > 100 else noticia.conteudo }}</p>
-                    <a href="{{ url_for('noticia_detalhe', id=noticia.id) }}" class="btn-leia-mais">Ver Mais</a>
-                    <small>{{ noticia.data_publicacao.strftime('%d/%m/%Y %H:%M') }}</small>
-                </article>
+                    <a href="{{ url_for('main.noticia_detalhe', id=noticia.id) }}">{{ noticia.titulo }}</a>                </article>
             {% endfor %}
         </section>
     </main>
