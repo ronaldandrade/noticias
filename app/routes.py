@@ -1,14 +1,17 @@
 from flask import Blueprint, render_template, redirect, url_for, request
 from .models import Noticia
 from .scraper import buscar_noticias
-from . import db  # Só importa db, não app
+from . import db
 from datetime import datetime, timedelta
 import nltk
 from nltk import trigrams
 from nltk.corpus import stopwords
 from collections import Counter
+import os
 
-# Cria o Blueprint
+# Aponta pro nltk_data na raiz do projeto
+nltk.data.path.append(os.path.join(os.path.dirname(__file__), '../nltk_data'))
+
 bp = Blueprint('main', __name__)
 
 @bp.route('/', methods=['GET'])
