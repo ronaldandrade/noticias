@@ -8,12 +8,36 @@
 </head>
 <body>
     <header>
-        <h1>Top Assuntos nas Notícias</h1>
+        <h1>Top 10 Assuntos nas Notícias</h1>
         <a href="/" class="btn-voltar">Voltar</a>
     </header>
     <main>
+        <section class="filtro-container">
+            <form method="GET" action="/dashboard">
+                <label for="data">A partir de:</label>
+                <input type="date" id="data" name="data" value="{{ data_filtro or '' }}">
+                <label for="assunto">Assunto:</label>
+                <input type="text" id="assunto" name="assunto" placeholder="Digite um termo" value="{{ assunto_filtro or '' }}">
+                <label for="periodo">Período:</label>
+                <select id="periodo" name="periodo">
+                    <option value="" {% if not periodo %}selected{% endif %}>Todos</option>
+                    <option value="semana" {% if periodo == 'semana' %}selected{% endif %}>Última Semana</option>
+                    <option value="mes" {% if periodo == 'mes' %}selected{% endif %}>Último Mês</option>
+                </select>
+                <button type="submit" class="btn-filtrar">Filtrar</button>
+                <a href="/dashboard" class="btn-limpar">Limpar Filtros</a>
+            </form>
+        </section>
         <section class="dashboard-container">
-            <div>{{ graph_html | safe }}</div>
+            <ul class="ranking-list">
+                {% for item in top_assuntos %}
+                    <li class="ranking-item">
+                        <span class="ranking-position">{{ loop.index }}</span>
+                        <a href="{{ url_for('index', assunto=item.assunto) }}" class="ranking-assunto">{{ item.assunto }}</a>
+                        <span class="ranking-frequencia">{{ item.frequencia }} menções</span>
+                    </li>
+                {% endfor %}
+            </ul>
         </section>
     </main>
     <footer>

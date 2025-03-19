@@ -1,43 +1,19 @@
 from flask import render_template, redirect, url_for, request
 from .models import Noticia
 from .scraper import buscar_noticias
+from .repository import filtrar_noticias, top_assuntos_noticias
 from flask import current_app as app
-from datetime import datetime, timedelta
 from . import db
-import plotly.express as px
-from collections import Counter
-import re
-import pandas as pd
+import os
+import nltk
+nltk.data.path.append('/home/ronald/nltk_data')
 
 @app.route('/', methods=['GET'])
 def index():
     data_filtro = request.args.get('data', None)
     assunto_filtro = request.args.get('assunto', None)
     periodo = request.args.get('periodo', None)
-    
-    query = Noticia.query
-    
-    if data_filtro:
-        try:
-            data = datetime.strptime(data_filtro, '%Y-%m-%d')
-            query = query.filter(db.func.date(Noticia.data_publicacao) >= data.date())
-        except ValueError:
-            pass
-    
-    if assunto_filtro:
-        query = query.filter(
-            (Noticia.titulo.ilike(f'%{assunto_filtro}%')) |
-            (Noticia.conteudo.ilike(f'%{assunto_filtro}%'))
-        )
-    
-    if periodo == 'semana':
-        data_inicio = datetime.now() - timedelta(days=7)
-        query = query.filter(Noticia.data_publicacao >= data_inicio)
-    elif periodo == 'mes':
-        data_inicio = datetime.now() - timedelta(days=30)
-        query = query.filter(Noticia.data_publicacao >= data_inicio)
-    
-    noticias = query.order_by(Noticia.data_publicacao.desc()).all()
+    noticias = filtrar_noticias(data_filtro, assunto_filtro, periodo, limit=15)
     return render_template('index.html', noticias=noticias)
 
 @app.route('/atualizar')
@@ -50,16 +26,10 @@ def noticia_detalhe(id):
     noticia = Noticia.query.get_or_404(id)
     return render_template('noticia.html', noticia=noticia)
 
-@app.route('/dashboard')
+@app.route('/dashboard', methods=['GET'])
 def dashboard():
-    noticias = Noticia.query.all()
-    titulos = [n.titulo.lower() for n in noticias]
-    palavras = ' '.join(titulos).split()
-    palavras = [re.sub(r'[^\w\s]', '', p) for p in palavras if len(p) > 3]
-    contagem = Counter(palavras).most_common(10)
-    
-    df = pd.DataFrame(contagem, columns=['Assunto', 'Frequência'])
-    fig = px.bar(df, x='Assunto', y='Frequência', title='Top 10 Assuntos nas Notícias')
-    graph_html = fig.to_html(full_html=False)
-    
-    return render_template('dashboard.html', graph_html=graph_html)
+    data_filtro = request.args.get('data', None)
+    assunto_filtro = request.args.get('assunto', None)
+    periodo = request.args.get('periodo', None)
+    top_assuntos = top_assuntos_noticias(data_filtro, assunto_filtro, periodo)
+    return render_template('dashboard.html', top_assuntos=top_assuntos, data_filtro=data_filtro, assunto_filtro=assunto_filtro, periodo=periodo)

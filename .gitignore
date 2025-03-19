@@ -1,4 +1,4 @@
-venv
+/venv
 schema.db
 pyvenv.cfg
 /__pycache__

@@ -193,6 +193,45 @@ footer {
 }
 
 /* DASHBOARD    */
+.ranking-list {
+    list-style: none;
+    padding: 0;
+}
+
+.ranking-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    margin-bottom: 10px;
+    border-radius: 10px;
+    transition: transform 0.3s, background 0.3s;
+}
+
+.ranking-item:hover {
+    transform: translateX(5px);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.ranking-position {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #00d4ff;
+    width: 10%;
+}
+
+.ranking-assunto {
+    font-size: 1.2em;
+    color: #f0f0f0;
+    flex-grow: 1;
+}
+
+.ranking-frequencia {
+    font-size: 1em;
+    color: #ff007a;
+    font-weight: bold;
+}
 .dashboard-container {
     max-width: 1200px;
     margin: 20px auto;
@@ -215,6 +254,18 @@ footer {
 
 .btn-dashboard:hover {
     background: #66e6ff;
+}
+
+.ranking-assunto {
+    font-size: 1.2em;
+    color: #00d4ff;
+    text-decoration: none;
+    flex-grow: 1;
+    transition: color 0.3s;
+}
+
+.ranking-assunto:hover {
+    color: #66e6ff;
 }
 
 /* Responsividade */
