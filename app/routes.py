@@ -2,14 +2,15 @@ from flask import Blueprint, render_template, redirect, url_for, request
 from .models import Noticia
 from .scraper import buscar_noticias
 from . import db
+from .repository import filtrar_noticias
 from datetime import datetime, timedelta
 import nltk
 from nltk import trigrams
 from nltk.corpus import stopwords
 from collections import Counter
+from .services import calcular_top_assuntos
 import os
 
-# Aponta pro nltk_data na raiz do projeto
 nltk.data.path.append(os.path.join(os.path.dirname(__file__), '../nltk_data'))
 
 bp = Blueprint('main', __name__)
@@ -19,32 +20,7 @@ def index():
     data_filtro = request.args.get('data', None)
     assunto_filtro = request.args.get('assunto', None)
     periodo = request.args.get('periodo', None)
-    
-    query = Noticia.query
-    
-    if data_filtro:
-        try:
-            data = datetime.strptime(data_filtro, '%Y-%m-%d')
-            query = query.filter(db.func.date(Noticia.data_publicacao) >= data.date())
-        except ValueError:
-            pass
-    
-    if assunto_filtro:
-        palavras = assunto_filtro.split()
-        for palavra in palavras:
-            query = query.filter(
-                (Noticia.titulo.ilike(f'%{palavra}%')) |
-                (Noticia.conteudo.ilike(f'%{palavra}%'))
-            )
-    
-    if periodo == 'semana':
-        data_inicio = datetime.now() - timedelta(days=7)
-        query = query.filter(Noticia.data_publicacao >= data_inicio)
-    elif periodo == 'mes':
-        data_inicio = datetime.now() - timedelta(days=30)
-        query = query.filter(Noticia.data_publicacao >= data_inicio)
-    
-    noticias = query.order_by(Noticia.data_publicacao.desc()).limit(15).all()
+    noticias = filtrar_noticias(data_filtro, assunto_filtro, periodo, limit=15)
     return render_template('index.html', noticias=noticias)
 
 @bp.route('/atualizar')
@@ -63,40 +39,7 @@ def dashboard():
     assunto_filtro = request.args.get('assunto', None)
     periodo = request.args.get('periodo', None)
     
-    query = Noticia.query
-    
-    if data_filtro:
-        try:
-            data = datetime.strptime(data_filtro, '%Y-%m-%d')
-            query = query.filter(db.func.date(Noticia.data_publicacao) >= data.date())
-        except ValueError:
-            pass
-    
-    if assunto_filtro:
-        query = query.filter(
-            (Noticia.titulo.ilike(f'%{assunto_filtro}%')) |
-            (Noticia.conteudo.ilike(f'%{assunto_filtro}%'))
-        )
-    
-    if periodo == 'semana':
-        data_inicio = datetime.now() - timedelta(days=7)
-        query = query.filter(Noticia.data_publicacao >= data_inicio)
-    elif periodo == 'mes':
-        data_inicio = datetime.now() - timedelta(days=30)
-        query = query.filter(Noticia.data_publicacao >= data_inicio)
-    
-    noticias = query.all()
-    titulos = [n.titulo.lower() for n in noticias]
-    stop_words = set(stopwords.words('portuguese'))
-    palavras = []
-    
-    for titulo in titulos:
-        tokens = nltk.word_tokenize(titulo)
-        tokens = [t for t in tokens if t not in stop_words and len(t) > 3]
-        trigramas = [' '.join(t) for t in trigrams(tokens)]
-        palavras.extend(trigramas)
-    
-    contagem = Counter(palavras).most_common(10)
-    top_assuntos = [{'assunto': a, 'frequencia': f} for a, f in contagem]
+    noticias = filtrar_noticias(data_filtro, assunto_filtro, periodo)
+    top_assuntos = calcular_top_assuntos(noticias)
     
     return render_template('dashboard.html', top_assuntos=top_assuntos, data_filtro=data_filtro, assunto_filtro=assunto_filtro, periodo=periodo)
