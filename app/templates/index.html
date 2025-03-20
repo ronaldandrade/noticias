@@ -34,7 +34,8 @@
                 <article class="noticia-card">
                     <h2>{{ noticia.titulo }}</h2>
                     <p>{{ noticia.conteudo[:100] + '...' if noticia.conteudo|length > 100 else noticia.conteudo }}</p>
-                    <a class="btn-leia-mais" href="{{ url_for('main.noticia_detalhe', id=noticia.id) }}">Leia mais</a>                </article>
+                    <a class="btn-leia-mais" href="{{ url_for('main.noticia_detalhe', id=noticia.id) }}">Leia mais</a>
+                </article>
             {% endfor %}
         </section>
     </main>

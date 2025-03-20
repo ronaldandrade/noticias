@@ -1,17 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, request
 from .models import Noticia
 from .scraper import buscar_noticias
-from . import db
 from .repository import filtrar_noticias
-from datetime import datetime, timedelta
-import nltk
-from nltk import trigrams
-from nltk.corpus import stopwords
-from collections import Counter
 from .services import calcular_top_assuntos
-import os
 
-nltk.data.path.append(os.path.join(os.path.dirname(__file__), '../nltk_data'))
 
 bp = Blueprint('main', __name__)
 
