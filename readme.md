@@ -57,12 +57,13 @@ or
 ```bash
 gunicorn app:app
 ```
-
+## Project Structure
+```
 news/
 ├── app/
 │   ├── __init__.py       # Flask app setup
 │   ├── routes.py         # Application routes with Blueprint
-│   ├── repository.py     # Aplying filters to search
+│   ├── repository.py     # Applying filters to search
 │   ├── services.py       # NLTK functions
 │   ├── models.py         # Database models
 │   ├── scraper.py        # News scraping logic
@@ -73,8 +74,9 @@ news/
 ├── run.py                # Local development entry point
 ├── Procfile              # Render deployment configuration
 ├── requirements.txt      # Python dependencies
-├── instance/             # Contain db archive database
-    ├── noticias.db         # SQLite database
+├── instance/             # Contains db archive database
+│   ├── noticias.db       # SQLite database
+```
 
 ## Usage
 Home Page: View and filter the latest news articles at /.
