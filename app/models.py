@@ -7,3 +7,4 @@ class Noticia(db.Model):
     conteudo = db.Column(db.Text, nullable=False)
     url = db.Column(db.String(500), unique=True, nullable=False)
     data_publicacao = db.Column(db.DateTime, nullable=False)
+    resumo = db.Column(db.Text)

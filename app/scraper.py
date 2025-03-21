@@ -3,13 +3,12 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 from .models import Noticia
 from . import db
+from .services.resume_text_service import resumir_texto
 
 def buscar_noticias():
     fontes = {
         "G1 Economia": "https://g1.globo.com/rss/g1/economia/",
-        # "UOL Notícias": "https://feeds.folha.uol.com.br/mercado/rss091.xml",
         "exame": "https://exame.com/feed/",
-        # "NY times": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
     }
     
     noticias_encontradas = []
@@ -29,11 +28,15 @@ def buscar_noticias():
             except ValueError:
                 data = datetime.now()
             
+            # Gera o resumo a partir do conteudo
+            resumo = resumir_texto(conteudo, num_frases=1)  # 1 frase pra descriptions curtas
+            
             noticia = Noticia(
                 titulo=titulo,
                 conteudo=conteudo,
                 url=link,
-                data_publicacao=data
+                data_publicacao=data,
+                resumo=resumo
             )
             noticias_encontradas.append(noticia)
     

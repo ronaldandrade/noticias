@@ -51,7 +51,7 @@ def dashboard():
         trigramas = [' '.join(t) for t in trigrams(tokens)]
         palavras.extend(trigramas)
     
-    contagem = Counter(palavras).most_common(10)
+    contagem = Counter(palavras).most_common(5)
     top_assuntos = [{'assunto': a, 'frequencia': f} for a, f in contagem]
     
     return render_template('dashboard.html', top_assuntos=top_assuntos, data_filtro=data_filtro, assunto_filtro=assunto_filtro, periodo=periodo)
