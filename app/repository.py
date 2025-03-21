@@ -2,7 +2,7 @@ from .models import Noticia
 from . import db
 from datetime import datetime, timedelta
 
-def filtrar_noticias(data_filtro=None, assunto_filtro=None, periodo=None, limit=None):
+def filtrar_noticias(data_filtro=None, assunto_filtro=None, periodo=None, page=1, per_page=10):
     query = Noticia.query
     
     if data_filtro:
@@ -27,6 +27,4 @@ def filtrar_noticias(data_filtro=None, assunto_filtro=None, periodo=None, limit=
         data_inicio = datetime.now() - timedelta(days=30)
         query = query.filter(Noticia.data_publicacao >= data_inicio)
     
-    if limit:
-        return query.order_by(Noticia.data_publicacao.desc()).limit(limit).all()
-    return query.order_by(Noticia.data_publicacao.desc()).all()
+    return query.order_by(Noticia.data_publicacao.desc()).paginate(page=page, per_page=per_page)

@@ -183,6 +183,28 @@ main {
     margin-bottom: 15px;
 }
 
+.pagination {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.pagination a {
+    padding: 8px 15px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    margin: 0 5px;
+}
+
+.pagination a:hover {
+    background-color: #0056b3;
+}
+
+.pagination span {
+    margin: 0 10px;
+}
+
 footer {
     background: #0d0d1a;
     padding: 10px;
