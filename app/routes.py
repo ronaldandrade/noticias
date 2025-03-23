@@ -1,16 +1,16 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, request, flash
 from .models import Noticia
 from .scraper import buscar_noticias
-from . import db
 from .repository import filtrar_noticias
-from datetime import datetime, timedelta
+from .services.calc_top_new_service import calcular_top_assuntos
 import nltk
-from nltk import trigrams
-from nltk.corpus import stopwords
-from collections import Counter
 import os
+from rq import Queue
+from redis import Redis
 
 nltk.data.path.append(os.path.join(os.path.dirname(__file__), '../nltk_data'))
+redis_conn = Redis.from_url(os.getenv('REDIS_URL', 'redis://localhost:6379/0'))
+q = Queue(connection=redis_conn)
 
 bp = Blueprint('main', __name__)
 
@@ -19,14 +19,15 @@ def index():
     data_filtro = request.args.get('data', None)
     assunto_filtro = request.args.get('assunto', None)
     periodo = request.args.get('periodo', None)
-    page = request.args.get('page', default=1, type=int)  # Pega a página da URL
+    page = request.args.get('page', default=1, type=int)
     
     noticias_paginadas = filtrar_noticias(data_filtro, assunto_filtro, periodo, page=page, per_page=10)
     return render_template('index.html', noticias=noticias_paginadas.items, pagination=noticias_paginadas)
 
 @bp.route('/atualizar')
 def atualizar():
-    buscar_noticias()
+    q.enqueue(buscar_noticias) 
+    flash('Atualizando feed!', 'success')
     return redirect(url_for('main.index'))
 
 @bp.route('/noticia/<int:id>')
@@ -41,17 +42,6 @@ def dashboard():
     periodo = request.args.get('periodo', None)
     
     noticias = filtrar_noticias(data_filtro, assunto_filtro, periodo)
-    titulos = [n.titulo.lower() for n in noticias.items]
-    stop_words = set(stopwords.words('portuguese'))
-    palavras = []
-    
-    for titulo in titulos:
-        tokens = nltk.word_tokenize(titulo)
-        tokens = [t for t in tokens if t not in stop_words and len(t) > 3]
-        trigramas = [' '.join(t) for t in trigrams(tokens)]
-        palavras.extend(trigramas)
-    
-    contagem = Counter(palavras).most_common(5)
-    top_assuntos = [{'assunto': a, 'frequencia': f} for a, f in contagem]
+    top_assuntos = calcular_top_assuntos(noticias.items)
     
     return render_template('dashboard.html', top_assuntos=top_assuntos, data_filtro=data_filtro, assunto_filtro=assunto_filtro, periodo=periodo)

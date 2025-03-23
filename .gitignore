@@ -2,3 +2,4 @@
 schema.db
 pyvenv.cfg
 /__pycache__
+.ENV.LOCAL
