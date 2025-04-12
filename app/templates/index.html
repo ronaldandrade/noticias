@@ -34,7 +34,8 @@
                 <article class="noticia-card">
                     <h2>{{ noticia.titulo }}</h2>
                     <p>{{ noticia.resumo or noticia.conteudo[:200] }}...</p>
-                    <a class="btn-leia-mais" href="{{ url_for('main.noticia_detalhe', id=noticia.id) }}">Leia mais</a>                </article>
+                    <a class="btn-leia-mais" href="{{ url_for('main.noticia_detalhe', id=noticia.id) }}">Leia mais</a>                
+                </article>
             {% endfor %}
         </section>
         <div class="pagination">
@@ -48,7 +49,7 @@
         </div>
     </main>
     <footer>
-        <p>© 2025 - Feito por ai</p>
+        <p>© 2025 - Ronald Andrade</p>
     </footer>
 </body>
 </html>

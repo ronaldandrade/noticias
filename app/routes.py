@@ -21,7 +21,7 @@ def index():
     periodo = request.args.get('periodo', None)
     page = request.args.get('page', default=1, type=int)  # Pega a página da URL
     
-    noticias_paginadas = filtrar_noticias(data_filtro, assunto_filtro, periodo, page=page, per_page=10)
+    noticias_paginadas = filtrar_noticias(data_filtro, assunto_filtro, periodo, page=page, per_page=15)
     return render_template('index.html', noticias=noticias_paginadas.items, pagination=noticias_paginadas)
 
 @bp.route('/atualizar')
