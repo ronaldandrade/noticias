@@ -29,7 +29,7 @@ To run the application locally, follow these steps:
 ### Steps
 1. **Clone the Repository**
 ```bash
-git clone https://github.com/yourusername/news-aggregator.git
+git clone https://github.com/ronaldandrade/news-aggregator.git
 cd news-aggregator
 ```
 
