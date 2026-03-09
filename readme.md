@@ -29,8 +29,8 @@ To run the application locally, follow these steps:
 ### Steps
 1. **Clone the Repository**
 ```bash
-git clone https://github.com/ronaldandrade/news-aggregator.git
-cd news-aggregator
+git clone https://github.com/ronaldandrade/noticias
+cd noticias
 ```
 
 2. **Set Up a Virtual Environment**
