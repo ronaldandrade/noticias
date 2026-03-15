@@ -16,7 +16,7 @@ titulos = df['titulo'].tolist()
 amostra_titulos = titulos[:200]
 rotulos = [1 if s == 'Positivo' else 0 for s in df['sentimento'][:200]]
 
-# 2. Configuração do Pipeline Profissional
+# 2. Configuração do Pipeline
 # Remove o vazamento de dados (Data Leakage) e automatiza a vetorização [cite: 1226, 1253]
 stopwords_pt = ['e', 'em', 'de', 'para', 'com', 'que', 'do', 'da', 'no', 'na', 'o', 'a', 'as', 'os']
 
@@ -26,7 +26,7 @@ pipeline_sentimento = Pipeline([
 ])
 
 # 3. Divisão e Validação Estatística (K-Fold)
-# Garante que as métricas de 0.61 não sejam fruto do acaso [cite: 967, 970]
+# Garante que as métricas de 0.61 não sejam fruto do acaso
 titulos_train, titulos_test, y_train, y_test = train_test_split(
     amostra_titulos, rotulos, test_size=0.2, random_state=42
 )
@@ -35,7 +35,7 @@ print("Iniciando Validação Cruzada (5-folds)...")
 cv_results = cross_validate(pipeline_sentimento, titulos_train, y_train, cv=5, 
                             scoring=['accuracy', 'precision', 'recall'])
 
-# 4. Treinamento Final e Avaliação [cite: 1255]
+# 4. Treinamento Final e Avaliação
 pipeline_sentimento.fit(titulos_train, y_train)
 y_pred = pipeline_sentimento.predict(titulos_test)
 
@@ -48,13 +48,13 @@ print(f"Recall: {recall_score(y_test, y_pred):.2f}")
 # 5. Função de Modo Interativo
 def modo_interativo(pipeline):
     print("\n" + "="*40)
-    print("🧠 MODO INTERATIVO DE CLASSIFICAÇÃO")
-    print("Digite uma notícia para testar o modelo (ou 'sair'):")
+    print("MODO INTERATIVO DE CLASSIFICAÇÃO")
+    print("Digite uma notícia para testar o modelo (ou 'sair') para encerrar:")
     while True:
         entrada = input("\nNotícia > ")
         if entrada.lower() == 'sair':
             break
-        # O pipeline vetoriza a string automaticamente antes de prever [cite: 1234]
+        # O pipeline vetoriza a string automaticamente antes de prever
         predicao = pipeline.predict([entrada])[0]
         sentimento = "✅ POSITIVO" if predicao == 1 else "❌ NEGATIVO"
         print(f"Resultado: {sentimento}")
