@@ -1,5 +1,5 @@
 # Classificador de Sentimento de Notícias
-
+![alt text](print.png)
 Este projeto é uma plataforma integrada de **Agregação e Análise de Sentimentos** de notícias. Ele combina técnicas de raspagem de dados (_scraping_), persistência em banco de dados, processamento de linguagem natural (NLP) e um pipeline avançado de Machine Learning para classificar o teor das notícias em Positivo ou Negativo.
 
 ## Visão Geral
