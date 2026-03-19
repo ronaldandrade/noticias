@@ -1,4 +1,12 @@
-/venv
+venv/
 schema.db
 pyvenv.cfg
-/__pycache__
+__pycache__/
+.vscode 
+
+# Ignore all .pyc files
+*.pyc       
+
+#ignore .cvs & .xlsx files
+*.cvs
+*.xlsx  
