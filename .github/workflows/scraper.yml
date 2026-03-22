@@ -1,0 +1,34 @@
+# .github/workflows/scraper.yml
+#
+# Chama o endpoint do scraper no Render automaticamente.
+# 100% gratuito — usa os minutos gratuitos do GitHub Actions.
+#
+# Setup:
+#   1. Crie o secret no GitHub:
+#      Repositório → Settings → Secrets and variables → Actions → New secret
+#      Nome:  CRON_SECRET
+#      Valor: a mesma senha que você colocou no Render
+#
+#   2. Ajuste a URL abaixo para a URL real do seu site no Render
+
+name: Atualizar notícias
+
+on:
+  schedule:
+    - cron: '0 9,15,21 * * *'   # roda às 9h, 15h e 21h (UTC) todo dia
+  workflow_dispatch:              # permite rodar manualmente pelo GitHub
+
+jobs:
+  scraper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Chamar endpoint de atualização
+        run: |
+          curl -s -X POST https://SEU-SITE.onrender.com/admin/cron/atualizar \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --fail \
+            --retry 3 \
+            --retry-delay 10

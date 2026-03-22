@@ -105,6 +105,18 @@ def dashboard():
         periodo=periodo,
     )
 
+@admin_bp.post("/cron/atualizar")
+def cron_atualizar():
+    """Chamado pelo Render Cron Job automaticamente."""
+    secret = request.headers.get("X-Cron-Secret", "")
+    if secret != os.environ.get("CRON_SECRET", ""):
+        return jsonify({"erro": "não autorizado"}), 401
+
+    buscar_noticias()
+    n = aplicar_scores_em_lote(limite=500)
+
+    return jsonify({"status": "ok", "scores_atualizados": n})
+
 
 # ── Relatório ─────────────────────────────────────────────────────────────────
 
