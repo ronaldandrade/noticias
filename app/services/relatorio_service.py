@@ -175,7 +175,6 @@ def gerar_dados_relatorio(dias: int = 90) -> dict:
         ativo = ativo_map.get(n.ativo_id)
         noticias_lista.append({
             "titulo":   n.titulo,
-            "fonte":    n.fonte or "—",
             "ticker":   ativo.ticker.replace(".SA", "") if ativo else "—",
             "score":    n.score_sentimento,
             "classe":   _classe_score(n.score_sentimento),
