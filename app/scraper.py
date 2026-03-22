@@ -1,14 +1,8 @@
 """
 scraper.py — raspagem HTML direta (sem RSS)
 
-Foco: PETR4, VALE3, ITUB4, ^BVSP
 Sites: InfoMoney, G1 Economia, Exame, UOL Economia
 
-Estratégia por site:
-  - InfoMoney: página de busca por ticker → lista de artigos
-  - G1 / Exame / UOL: página de seção → cards de notícias
-  - Cada fonte tem um seletor CSS específico para título e link
-  - Score e ativo_id calculados na coleta
 """
 
 import logging
@@ -22,6 +16,7 @@ from .models import Noticia, Ativo
 from . import db
 from .services.resume_text_service import resumir_texto
 from .services.sentimento_service import calcular_score
+from .services.assosciacao_service import associar_ativo
 
 logger = logging.getLogger(__name__)
 
@@ -52,26 +47,26 @@ FONTES_HTML = [
     # ── InfoMoney por ticker ───────────────────────────────────────────────────
     {
         "nome": "InfoMoney PETR4",
-        "url": "https://www.infomoney.com.br/cotacoes/b3/acao/petrobras-petr4/noticias/",
+        "url": "https://www.infomoney.com.br/tudo-sobre/petrobras/",
         "ticker_hint": "PETR4.SA",
         "seletor_item": "article.blocco, div.card-news, h2.title-news",
-        "seletor_titulo": "h2, h3, .title",
+        "seletor_titulo": "h2, h3, .title, a",
         "base_url": "https://www.infomoney.com.br",
     },
     {
         "nome": "InfoMoney VALE3",
-        "url": "https://www.infomoney.com.br/cotacoes/b3/acao/vale-vale3/noticias/",
+        "url": "https://www.infomoney.com.br/tudo-sobre/vale/",
         "ticker_hint": "VALE3.SA",
         "seletor_item": "article.blocco, div.card-news, h2.title-news",
-        "seletor_titulo": "h2, h3, .title",
+        "seletor_titulo": "h2, h3, .title, a",
         "base_url": "https://www.infomoney.com.br",
     },
     {
         "nome": "InfoMoney ITUB4",
-        "url": "https://www.infomoney.com.br/cotacoes/b3/acao/itau-unibanco-itub4/noticias/",
+        "url": "https://www.infomoney.com.br/tudo-sobre/itau/",
         "ticker_hint": "ITUB4.SA",
         "seletor_item": "article.blocco, div.card-news, h2.title-news",
-        "seletor_titulo": "h2, h3, .title",
+        "seletor_titulo": "h2, h3, .title, a",
         "base_url": "https://www.infomoney.com.br",
     },
     {
@@ -206,21 +201,6 @@ FONTES_HTML = [
     },
 ]
 
-# Palavras-chave para associação por texto
-_KEYWORDS: dict[str, list[str]] = {
-    "PETR4.SA": ["PETROBRAS", "PETR4", "PETRÓLEO", "PRÉ-SAL", "COMBUSTÍVEL", "PETROBRÁS"],
-    "VALE3.SA": ["VALE", "VALE3", "MINÉRIO", "MINÉRIO DE FERRO", "PELOTA", "FERROVIA"],
-    "ITUB4.SA": ["ITAÚ", "ITAU", "ITUB4", "ITAÚ UNIBANCO", "BANCO ITAÚ"],
-    "^BVSP":    ["IBOVESPA", "BOVESPA", "BVSP", "B3", "BOLSA DE VALORES", "IBOV"],
-    "^GSPC":   ["S&P 500", "S&P500", "BOLSA AMERICANA", "WALL STREET", "NYSE"],
-    "^DJI":    ["DOW JONES", "DOW", "DJIA"],
-    "^IXIC":   ["NASDAQ", "TECH STOCKS"],
-    "BRL=X":   ["DÓLAR", "CÂMBIO", "COTAÇÃO DO DÓLAR", "DÓLAR HOJE", "USD"],
-    "GC=F":    ["OURO", "GOLD"],
-    "CL=F":    ["PETRÓLEO WTI", "WTI", "CRUDE OIL"],
-    "BTC-USD": ["BITCOIN", "BTC", "CRIPTOMOEDA", "CRIPTO"],
-}
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -247,16 +227,6 @@ def _ativo_id_por_hint(ticker_hint: str | None, ativos: list[Ativo]) -> int | No
             return ativo.id
     return None
 
-
-def _ativo_id_por_texto(titulo: str, conteudo: str, ativos: list[Ativo]) -> int | None:
-    texto = f"{titulo} {conteudo[:400]}".upper()
-    for ativo in ativos:
-        keywords = _KEYWORDS.get(ativo.ticker, [])
-        ticker_limpo = ativo.ticker.replace(".SA", "").replace("-", "").upper()
-        todas = [ticker_limpo, ativo.nome.upper()] + keywords
-        if any(kw in texto for kw in todas):
-            return ativo.id
-    return None
 
 
 def _fazer_request(url: str) -> requests.Response | None:
@@ -379,7 +349,7 @@ def _raspar_html(fonte: dict, ativos: list[Ativo]) -> list[dict]:
 def _montar_noticia(item: dict, fonte_nome: str, ativos: list[Ativo], num_frases: int) -> Noticia:
     titulo   = item["titulo"]
     conteudo = item["conteudo"]
-    ativo_id = item["ativo_id_hint"] or _ativo_id_por_texto(titulo, conteudo, ativos)
+    ativo_id = item["ativo_id_hint"] or associar_ativo(titulo, conteudo, ativos)
     score    = calcular_score(f"{titulo}. {conteudo}")
 
     try:

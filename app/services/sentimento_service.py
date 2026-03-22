@@ -1,8 +1,8 @@
 """
-services/sentimento_service.py  (versão otimizada — sem tradução)
+services/sentimento_service.py 
 
-Roda 100% local, sem chamadas HTTP.
-Velocidade esperada: ~500-1000 notícias/segundo.
+Cálculo de score de sentimento para notícias financeiras.
+Combina análise VADER com um léxico financeiro customizado (PT+EN).
 """
 
 import logging
@@ -13,6 +13,7 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 from ..models import Ativo, Noticia
 from .. import db
+from .assosciacao_service import associar_ativo
 
 logger = logging.getLogger(__name__)
 
@@ -77,14 +78,6 @@ def calcular_score(texto: str) -> float:
     return round(score_vader, 4)
 
 
-def _associar_ativo(noticia: Noticia, ativos: list[Ativo]) -> Optional[int]:
-    texto = f"{noticia.titulo} {noticia.conteudo[:300]}".upper()
-    for ativo in ativos:
-        ticker_limpo = ativo.ticker.replace(".SA", "").replace("-", "").upper()
-        if ticker_limpo in texto or ativo.nome.upper() in texto:
-            return ativo.id
-    return None
-
 
 def aplicar_scores_em_lote(limite: int = 500) -> int:
     noticias = (
@@ -107,7 +100,7 @@ def aplicar_scores_em_lote(limite: int = 500) -> int:
             noticia.score_sentimento = calcular_score(texto)
 
             if noticia.ativo_id is None:
-                noticia.ativo_id = _associar_ativo(noticia, ativos)
+                noticia.ativo_id = associar_ativo(noticia.titulo, noticia.conteudo or "", ativos)
 
             atualizadas += 1
 
