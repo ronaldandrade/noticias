@@ -14,7 +14,7 @@ on:
 jobs:
   scraper:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 3
 
     steps:
       - name: Chamar endpoint de atualização
