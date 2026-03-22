@@ -13,7 +13,7 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 from ..models import Ativo, Noticia
 from .. import db
-from .assosciacao_service import associar_ativo
+from .assossiacao_service import associar_ativo
 
 logger = logging.getLogger(__name__)
 

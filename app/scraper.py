@@ -16,7 +16,7 @@ from .models import Noticia, Ativo
 from . import db
 from .services.resume_text_service import resumir_texto
 from .services.sentimento_service import calcular_score
-from .services.assosciacao_service import associar_ativo
+from .services.assossiacao_service import associar_ativo
 
 logger = logging.getLogger(__name__)
 
