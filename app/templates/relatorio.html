@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório de Sentimento — Mercado Financeiro BR</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg:       #0d0f14;
+    --surface:  #13161e;
+    --surface2: #1a1e29;
+    --border:   #252a38;
+    --text:     #e8eaf0;
+    --muted:    #7c8499;
+    --accent:   #4f9cf9;
+    --pos:      #34d399;
+    --neg:      #f87171;
+    --neu:      #a78bfa;
+    --gold:     #fbbf24;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 2.5rem 3rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-left h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.2rem;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  .header-left p {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .periodo-select {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .periodo-select span { color: var(--muted); font-size: 0.8rem; }
+
+  .btn-periodo {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 0.35rem 0.9rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .btn-periodo:hover, .btn-periodo.ativo {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(79,156,249,0.08);
+  }
+
+  /* ── Layout ── */
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2.5rem 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  section { display: flex; flex-direction: column; gap: 1rem; }
+
+  .section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── Cards de resumo ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .card {
+    background: var(--surface);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .card-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .card-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .card-value.pos { color: var(--pos); }
+  .card-value.neg { color: var(--neg); }
+  .card-value.acc { color: var(--accent); }
+
+  .card-sub {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  /* ── Gráficos ── */
+  .chart-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .chart-box h3 {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 1rem;
+  }
+
+  .chart-box h3 span {
+    color: var(--muted);
+    font-weight: 300;
+    font-size: 0.78rem;
+    margin-left: 0.5rem;
+  }
+
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
+
+  .plotly-chart { width: 100%; min-height: 300px; }
+
+  /* ── Tabela de correlações ── */
+  .tabela-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  thead tr {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    padding: 0.85rem 1.25rem;
+    text-align: left;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  td {
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+
+  .ticker-pill {
+    background: rgba(79,156,249,0.12);
+    color: var(--accent);
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .badge.forte    { background: rgba(52,211,153,0.15); color: var(--pos); }
+  .badge.moderada { background: rgba(251,191,36,0.15); color: var(--gold); }
+  .badge.fraca    { background: rgba(124,132,153,0.15); color: var(--muted); }
+
+  .val-pos { color: var(--pos); font-family: 'DM Mono', monospace; }
+  .val-neg { color: var(--neg); font-family: 'DM Mono', monospace; }
+  .val-neu { color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  /* ── Notícias ── */
+  .noticias-lista {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .noticia-item {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  .noticia-item:last-child { border-bottom: none; }
+  .noticia-item:hover { background: var(--surface2); }
+
+  .score-badge {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .score-badge.positivo { background: rgba(52,211,153,0.12); color: var(--pos); border: 1px solid rgba(52,211,153,0.25); }
+  .score-badge.negativo { background: rgba(248,113,113,0.12); color: var(--neg); border: 1px solid rgba(248,113,113,0.25); }
+  .score-badge.neutro   { background: rgba(167,139,250,0.12); color: var(--neu); border: 1px solid rgba(167,139,250,0.25); }
+
+  .noticia-titulo {
+    font-size: 0.88rem;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .noticia-titulo a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .noticia-titulo a:hover { color: var(--accent); }
+
+  .noticia-meta {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 0.2rem;
+  }
+
+  .noticia-meta .tk {
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .noticia-data {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 1.5rem 3rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Sentimento &amp; Mercado</h1>
+    <p>Relatório gerado em {{ gerado_em }} &mdash; últimos {{ periodo_dias }} dias</p>
+  </div>
+  <div class="periodo-select">
+    <span>Período:</span>
+    <a href="?dias=30"  class="btn-periodo {% if periodo_dias == 30 %}ativo{% endif %}">30d</a>
+    <a href="?dias=60"  class="btn-periodo {% if periodo_dias == 60 %}ativo{% endif %}">60d</a>
+    <a href="?dias=90"  class="btn-periodo {% if periodo_dias == 90 %}ativo{% endif %}">90d</a>
+    <a href="?dias=180" class="btn-periodo {% if periodo_dias == 180 %}ativo{% endif %}">180d</a>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── Cards de resumo ── -->
+  <section>
+    <div class="section-title">Visão geral</div>
+    <div class="cards-grid">
+      <div class="card">
+        <span class="card-label">Notícias coletadas</span>
+        <span class="card-value acc">{{ resumo.total_noticias }}</span>
+        <span class="card-sub">{{ resumo.com_score }} com score</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Score médio</span>
+        <span class="card-value {% if resumo.score_medio > 0.05 %}pos{% elif resumo.score_medio < -0.05 %}neg{% endif %}">
+          {{ '%+.3f' % resumo.score_medio }}
+        </span>
+        <span class="card-sub">entre −1.0 e +1.0</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Positivas</span>
+        <span class="card-value pos">{{ resumo.positivas }}</span>
+        <span class="card-sub">score &gt; 0.05</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Negativas</span>
+        <span class="card-value neg">{{ resumo.negativas }}</span>
+        <span class="card-sub">score &lt; −0.05</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Neutras</span>
+        <span class="card-value">{{ resumo.neutras }}</span>
+        <span class="card-sub">−0.05 a +0.05</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Ativos monitorados</span>
+        <span class="card-value acc">{{ resumo.total_ativos }}</span>
+        <span class="card-sub">na base de dados</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Série temporal ── -->
+  <section>
+    <div class="section-title">Sentimento × Preço por ativo</div>
+    <div class="chart-grid" id="series-container"></div>
+  </section>
+
+  <!-- ── Heatmap ── -->
+  <section>
+    <div class="section-title">Sentimento médio por dia da semana</div>
+    <div class="chart-box">
+      <div id="heatmap" class="plotly-chart"></div>
+    </div>
+  </section>
+
+  <!-- ── Correlações ── -->
+  <section>
+    <div class="section-title">Correlação sentimento × retorno</div>
+    {% if correlacoes %}
+    <div class="tabela-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Ativo</th>
+            <th>Empresa</th>
+            <th>Pearson</th>
+            <th>Spearman</th>
+            <th>Força</th>
+            <th>Notícias</th>
+            <th>Período</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in correlacoes %}
+          <tr>
+            <td><span class="ticker-pill">{{ c.ticker | replace('.SA','') }}</span></td>
+            <td>{{ c.nome }}</td>
+            <td class="{{ 'val-pos' if c.pearson and c.pearson > 0 else 'val-neg' if c.pearson and c.pearson < 0 else 'val-neu' }}">
+              {{ '%+.3f' % c.pearson if c.pearson is not none else '—' }}
+            </td>
+            <td class="{{ 'val-pos' if c.spearman and c.spearman > 0 else 'val-neg' if c.spearman and c.spearman < 0 else 'val-neu' }}">
+              {{ '%+.3f' % c.spearman if c.spearman is not none else '—' }}
+            </td>
+            <td><span class="badge {{ c.forca }}">{{ c.forca }}</span></td>
+            <td class="val-neu">{{ c.n_noticias }}</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted)">{{ c.periodo }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:0.75rem;color:var(--muted);padding:0 0.25rem">
+      Pearson mede correlação linear. Spearman mede correlação de ordem (mais robusto a outliers).
+      Valores entre −0.3 e +0.3 são considerados fracos; acima de ±0.5, fortes.
+    </div>
+    {% else %}
+    <div class="chart-box" style="color:var(--muted);font-size:0.85rem">
+      Nenhuma correlação calculada ainda. Rode <code>calcular_correlacao_todos()</code>.
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- ── Últimas notícias ── -->
+  <section>
+    <div class="section-title">Últimas notícias analisadas</div>
+    <div class="noticias-lista">
+      {% for n in noticias %}
+      <div class="noticia-item">
+        <div class="score-badge {{ n.classe }}">
+          {{ '%+.2f' % n.score }}
+        </div>
+        <div>
+          <div class="noticia-titulo">
+            <a href="{{ n.url }}" target="_blank" rel="noopener">{{ n.titulo }}</a>
+          </div>
+          <div class="noticia-meta">
+            <span class="tk">{{ n.ticker }}</span>
+            &nbsp;·&nbsp; {{ n.fonte }}
+          </div>
+        </div>
+        <div class="noticia-data">{{ n.data }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Dados: InfoMoney · G1 · Exame · UOL &nbsp;|&nbsp;
+  Sentimento: VADER + léxico financeiro PT &nbsp;|&nbsp;
+  Cotações: yfinance
+</footer>
+
+<script>
+const series  = {{ series_json | safe }};
+const heatmap = {{ heatmap_json | safe }};
+
+const LAYOUT_BASE = {
+  paper_bgcolor: 'transparent',
+  plot_bgcolor:  'transparent',
+  font:  { family: "'DM Sans', sans-serif", color: '#7c8499', size: 11 },
+  margin: { t: 10, r: 10, b: 40, l: 50 },
+  xaxis: { gridcolor: '#1a1e29', linecolor: '#252a38', zeroline: false },
+  yaxis: { gridcolor: '#1a1e29', linecolor: '#252a38', zeroline: false },
+  legend: { bgcolor: 'transparent', font: { size: 10 } },
+};
+
+const CONFIG = { displayModeBar: false, responsive: true };
+
+// ── Séries temporais ──────────────────────────────────────────────────────────
+const container = document.getElementById('series-container');
+
+Object.entries(series).forEach(([ticker, d]) => {
+  const box = document.createElement('div');
+  box.className = 'chart-box';
+  box.innerHTML = `<h3>${ticker.replace('.SA','')} <span>${d.nome}</span></h3><div id="chart-${ticker}" class="plotly-chart"></div>`;
+  container.appendChild(box);
+
+  const tracas = [];
+
+  if (d.precos.length) {
+    tracas.push({
+      x: d.datas_cot, y: d.precos,
+      name: 'Preço (R$)', type: 'scatter', mode: 'lines',
+      line: { color: '#4f9cf9', width: 1.5 },
+      yaxis: 'y2',
+    });
+  }
+
+  if (d.scores.length) {
+    tracas.push({
+      x: d.datas_score, y: d.scores,
+      name: 'Sentimento', type: 'bar',
+      marker: {
+        color: d.scores.map(s => s > 0.05 ? '#34d399' : s < -0.05 ? '#f87171' : '#a78bfa'),
+        opacity: 0.7,
+      },
+      yaxis: 'y',
+    });
+  }
+
+  if (!tracas.length) return;
+
+  const layout = {
+    ...LAYOUT_BASE,
+    yaxis:  { ...LAYOUT_BASE.yaxis, title: 'Sentimento', titlefont: { size: 10 } },
+    yaxis2: { ...LAYOUT_BASE.yaxis, title: 'Preço (R$)', titlefont: { size: 10 },
+               overlaying: 'y', side: 'right', showgrid: false },
+    barmode: 'overlay',
+  };
+
+  Plotly.newPlot(`chart-${ticker}`, tracas, layout, CONFIG);
+});
+
+// ── Heatmap ───────────────────────────────────────────────────────────────────
+if (heatmap.ativos.length) {
+  Plotly.newPlot('heatmap', [{
+    z:    heatmap.valores,
+    x:    heatmap.dias,
+    y:    heatmap.ativos,
+    type: 'heatmap',
+    colorscale: [
+      [0,   '#7f1d1d'],
+      [0.3, '#f87171'],
+      [0.5, '#1a1e29'],
+      [0.7, '#34d399'],
+      [1,   '#064e3b'],
+    ],
+    zmid: 0,
+    colorbar: {
+      tickfont: { color: '#7c8499', size: 10 },
+      len: 0.8,
+    },
+    hovertemplate: '<b>%{y}</b><br>%{x}: %{z:.3f}<extra></extra>',
+  }], {
+    ...LAYOUT_BASE,
+    margin: { t: 10, r: 80, b: 40, l: 80 },
+    yaxis: { ...LAYOUT_BASE.yaxis, automargin: true },
+    height: 220,
+  }, CONFIG);
+}
+</script>
+
+</body>
+</html>

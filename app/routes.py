@@ -5,6 +5,7 @@ from .services.cotacao_service import (
     buscar_cotacoes_todos_ativos,
     calcular_correlacao_todos,
 )   
+from .services.relatorio_service import gerar_dados_relatorio
 from .scraper import buscar_noticias
 from . import db
 from .repository import filtrar_noticias
@@ -18,6 +19,7 @@ nltk.data.path.append(os.path.join(os.path.dirname(__file__), '../nltk_data'))
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 bp = Blueprint('main', __name__)
+relatorio_bp = Blueprint("relatorio", __name__, url_prefix="/relatorio")
 
 @bp.route('/', methods=['GET'])
 def index():
@@ -111,3 +113,9 @@ def listar_scores():
         for n in noticias
     ])
 
+@relatorio_bp.get("/")
+def relatorio():
+    dias = int(request.args.get("dias", 90))
+    dados = gerar_dados_relatorio(dias=dias)
+    return render_template("relatorio.html", **dados)
+ 
