@@ -212,6 +212,13 @@ _KEYWORDS: dict[str, list[str]] = {
     "VALE3.SA": ["VALE", "VALE3", "MINÉRIO", "MINÉRIO DE FERRO", "PELOTA", "FERROVIA"],
     "ITUB4.SA": ["ITAÚ", "ITAU", "ITUB4", "ITAÚ UNIBANCO", "BANCO ITAÚ"],
     "^BVSP":    ["IBOVESPA", "BOVESPA", "BVSP", "B3", "BOLSA DE VALORES", "IBOV"],
+    "^GSPC":   ["S&P 500", "S&P500", "BOLSA AMERICANA", "WALL STREET", "NYSE"],
+    "^DJI":    ["DOW JONES", "DOW", "DJIA"],
+    "^IXIC":   ["NASDAQ", "TECH STOCKS"],
+    "BRL=X":   ["DÓLAR", "CÂMBIO", "COTAÇÃO DO DÓLAR", "DÓLAR HOJE", "USD"],
+    "GC=F":    ["OURO", "GOLD"],
+    "CL=F":    ["PETRÓLEO WTI", "WTI", "CRUDE OIL"],
+    "BTC-USD": ["BITCOIN", "BTC", "CRIPTOMOEDA", "CRIPTO"],
 }
 
 
