@@ -26,21 +26,53 @@ relatorio_bp = Blueprint("relatorio", __name__, url_prefix="/relatorio")
 
 @bp.route('/', methods=['GET'])
 def index():
+    from .models import Noticia, Ativo
+    from sqlalchemy import func
+ 
     data_filtro    = request.args.get('data',    None)
     assunto_filtro = request.args.get('assunto', None)
     periodo        = request.args.get('periodo', None)
     page           = request.args.get('page', default=1, type=int)
-
+ 
     noticias_paginadas = filtrar_noticias(
         data_filtro, assunto_filtro, periodo, page=page, per_page=15
     )
+ 
+    # Pré-carrega relação ativo para evitar N+1 queries no template
+    from sqlalchemy.orm import joinedload
+    ids_pagina = [n.id for n in noticias_paginadas.items]
+ 
+    # ── Visão geral (sobre todo o banco, não só a página atual) ──────────────
+    total_noticias  = Noticia.query.count()
+    total_paginas   = noticias_paginadas.pages
+ 
+    scores = db.session.query(Noticia.score_sentimento)\
+               .filter(Noticia.score_sentimento.isnot(None)).all()
+    scores_list = [r[0] for r in scores]
+ 
+    total_positivas = sum(1 for s in scores_list if s >  0.05)
+    total_negativas = sum(1 for s in scores_list if s < -0.05)
+    total_neutras   = len(scores_list) - total_positivas - total_negativas
+    score_medio     = round(sum(scores_list) / len(scores_list), 3) if scores_list else 0.0
+    total_com_ativo = Noticia.query.filter(Noticia.ativo_id.isnot(None)).count()
+ 
+    # Adiciona relação ativo em cada notícia da página para o template
+    ativos_map = {a.id: a for a in Ativo.query.all()}
+    for n in noticias_paginadas.items:
+        n.ativo = ativos_map.get(n.ativo_id)
+ 
     return render_template(
         'index.html',
         noticias=noticias_paginadas.items,
         pagination=noticias_paginadas,
+        total_noticias=total_noticias,
+        total_paginas=total_paginas,
+        total_positivas=total_positivas,
+        total_negativas=total_negativas,
+        total_neutras=total_neutras,
+        score_medio=score_medio,
+        total_com_ativo=total_com_ativo,
     )
-
-
 @bp.route('/atualizar')
 def atualizar():
     """

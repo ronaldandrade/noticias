@@ -1,55 +1,542 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Últimas Notícias</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor de Notícias — Mercado Financeiro BR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0d0f14;
+    --surface:  #13161e;
+    --surface2: #1a1e29;
+    --border:   #252a38;
+    --text:     #e8eaf0;
+    --muted:    #7c8499;
+    --accent:   #4f9cf9;
+    --pos:      #34d399;
+    --neg:      #f87171;
+    --neu:      #a78bfa;
+    --gold:     #fbbf24;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-left h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.9rem;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .header-left p {
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 0.3rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .header-nav {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    border-radius: 7px;
+    font-size: 0.8rem;
+    font-family: 'DM Mono', monospace;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+
+  .btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(79,156,249,0.08); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { background: #3a87e8; border-color: #3a87e8; color: #fff; }
+
+  /* ── Layout ── */
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 3rem 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+
+  /* ── Cards visão geral ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .card {
+    background: var(--surface);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .card-label {
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .card-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.9rem;
+    line-height: 1;
+  }
+
+  .card-value.pos  { color: var(--pos); }
+  .card-value.neg  { color: var(--neg); }
+  .card-value.acc  { color: var(--accent); }
+  .card-value.neu  { color: var(--neu); }
+  .card-sub { font-size: 0.72rem; color: var(--muted); }
+
+  /* ── Filtros ── */
+  .filtros-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .filtro-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .filtro-grupo label {
+    font-size: 0.68rem;
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  .filtro-grupo input,
+  .filtro-grupo select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.45rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+    min-width: 140px;
+  }
+
+  .filtro-grupo input:focus,
+  .filtro-grupo select:focus { border-color: var(--accent); }
+
+  .filtro-grupo select option { background: var(--surface2); }
+
+  /* ── Lista de notícias ── */
+  .noticias-lista {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .noticia-item {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    align-items: start;
+    gap: 1.25rem;
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  .noticia-item:last-child { border-bottom: none; }
+  .noticia-item:hover { background: var(--surface2); }
+
+  .score-badge {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    flex-shrink: 0;
+    margin-top: 2px;
+    gap: 1px;
+  }
+
+  .score-badge.positivo { background: rgba(52,211,153,0.1); color: var(--pos); border: 1px solid rgba(52,211,153,0.2); }
+  .score-badge.negativo { background: rgba(248,113,113,0.1); color: var(--neg); border: 1px solid rgba(248,113,113,0.2); }
+  .score-badge.neutro   { background: rgba(167,139,250,0.1); color: var(--neu); border: 1px solid rgba(167,139,250,0.2); }
+  .score-badge.sem-score{ background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+  .score-badge .score-num { font-size: 0.8rem; }
+  .score-badge .score-icon { font-size: 0.65rem; opacity: 0.8; }
+
+  .noticia-corpo { min-width: 0; }
+
+  .noticia-titulo {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.4;
+    margin-bottom: 0.35rem;
+  }
+
+  .noticia-resumo {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  .noticia-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .tag.ativo    { background: rgba(79,156,249,0.12); color: var(--accent); }
+  .tag.fonte    { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  .tag.data     { color: var(--muted); }
+  .tag.corr-pos { background: rgba(52,211,153,0.1); color: var(--pos); }
+  .tag.corr-neg { background: rgba(248,113,113,0.1); color: var(--neg); }
+  .tag.corr-neu { background: rgba(167,139,250,0.1); color: var(--neu); }
+
+  .noticia-acao {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  .btn-leia {
+    font-size: 0.72rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+    text-decoration: none;
+    border: 1px solid rgba(79,156,249,0.3);
+    padding: 0.25rem 0.65rem;
+    border-radius: 5px;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  .btn-leia:hover { background: rgba(79,156,249,0.1); }
+
+  /* ── Paginação ── */
+  .paginacao {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .paginacao a, .paginacao span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 0.75rem;
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    background: var(--surface);
+    transition: all 0.15s;
+  }
+
+  .paginacao a:hover { border-color: var(--accent); color: var(--accent); }
+  .paginacao .atual  { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 1.25rem 3rem;
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  @media (max-width: 768px) {
+    header, main { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .noticia-item { grid-template-columns: 44px 1fr; }
+    .noticia-acao { display: none; }
+    footer { padding-left: 1.25rem; padding-right: 1.25rem; }
+  }
+</style>
 </head>
 <body>
-    <header>
-        <h1>Últimas Notícias</h1>
-        <a href="/atualizar" class="btn-atualizar">Atualizar Notícias</a>
-        <a href="/relatorio" class="btn-dashboard">Relatório</a>
-    </header>
-        <main>
-        <section class="filtro-container">
-            <form method="GET" action="/">
-                <label for="data">A partir de:</label>
-                <input type="date" id="data" name="data">
-                <label for="assunto">Assunto:</label>
-                <input type="text" id="assunto" name="assunto" placeholder="Digite um termo">
-                <label for="periodo">Período:</label>
-                <select id="periodo" name="periodo">
-                    <option value="">Todos</option>
-                    <option value="semana">Última Semana</option>
-                    <option value="mes">Último Mês</option>
-                </select>
-                <button type="submit" class="btn-filtrar">Filtrar</button>
-                <a href="/" class="btn-limpar">Limpar Filtros</a>
-            </form>
-        </section>
-        <section class="noticias-container">
-            {% for noticia in noticias %}
-                <article class="noticia-card">
-                    <h2>{{ noticia.titulo }}</h2>
-                    <p>{{ noticia.resumo or noticia.conteudo[:200] }}...</p>
-                    <a class="btn-leia-mais" href="{{ url_for('main.noticia_detalhe', id=noticia.id) }}">Leia mais</a>                
-                </article>
-            {% endfor %}
-        </section>
-        <div class="pagination">
-            {% if pagination.has_prev %}
-                <a href="{{ url_for('main.index', page=pagination.prev_num, data=request.args.get('data'), assunto=request.args.get('assunto'), periodo=request.args.get('periodo')) }}"><</a>
-            {% endif %}
-            <span>Página {{ pagination.page }} de {{ pagination.pages }}</span>
-            {% if pagination.has_next %}
-                <a href="{{ url_for('main.index', page=pagination.next_num, data=request.args.get('data'), assunto=request.args.get('assunto'), periodo=request.args.get('periodo')) }}">></a>
-            {% endif %}
+
+<header>
+  <div class="header-left">
+    <h1>Monitor Financeiro</h1>
+    <p>Notícias · Sentimento · Correlações</p>
+  </div>
+  <nav class="header-nav">
+    <a href="/atualizar" class="btn">↻ Atualizar</a>
+    <a href="/dashboard" class="btn">Dashboard</a>
+    <a href="/relatorio" class="btn primary">Relatório</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ── Visão geral ── -->
+  <section>
+    <div class="section-title">Visão geral</div>
+    <div class="cards-grid">
+      <div class="card">
+        <span class="card-label">Total de notícias</span>
+        <span class="card-value acc">{{ total_noticias }}</span>
+        <span class="card-sub">{{ total_paginas }} páginas</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Positivas</span>
+        <span class="card-value pos">{{ total_positivas }}</span>
+        <span class="card-sub">score &gt; 0.05</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Negativas</span>
+        <span class="card-value neg">{{ total_negativas }}</span>
+        <span class="card-sub">score &lt; −0.05</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Neutras</span>
+        <span class="card-value neu">{{ total_neutras }}</span>
+        <span class="card-sub">entre −0.05 e +0.05</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Score médio</span>
+        <span class="card-value {% if score_medio > 0.05 %}pos{% elif score_medio < -0.05 %}neg{% endif %}">
+          {{ '%+.2f' % score_medio if score_medio else '—' }}
+        </span>
+        <span class="card-sub">sentimento geral</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Com ativo</span>
+        <span class="card-value acc">{{ total_com_ativo }}</span>
+        <span class="card-sub">notícias associadas</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Filtros ── -->
+  <section>
+    <div class="section-title">Filtros</div>
+    <div class="filtros-box">
+      <form method="GET" action="/" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-end;width:100%">
+        <div class="filtro-grupo">
+          <label for="data">A partir de</label>
+          <input type="date" id="data" name="data" value="{{ request.args.get('data', '') }}">
         </div>
-    </main>
-    <footer>
-        <p>© 2025 - Ronald Andrade</p>
-    </footer>
+        <div class="filtro-grupo">
+          <label for="assunto">Assunto</label>
+          <input type="text" id="assunto" name="assunto" placeholder="Petrobras, dólar..."
+                 value="{{ request.args.get('assunto', '') }}">
+        </div>
+        <div class="filtro-grupo">
+          <label for="periodo">Período</label>
+          <select id="periodo" name="periodo">
+            <option value="">Todos</option>
+            <option value="semana" {% if request.args.get('periodo') == 'semana' %}selected{% endif %}>Última semana</option>
+            <option value="mes"    {% if request.args.get('periodo') == 'mes'    %}selected{% endif %}>Último mês</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:0.5rem;margin-left:auto">
+          <a href="/" class="btn">Limpar</a>
+          <button type="submit" class="btn primary">Filtrar</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ── Notícias ── -->
+  <section>
+    <div class="section-title">
+      Notícias — página {{ pagination.page }} de {{ pagination.pages }}
+    </div>
+    <div class="noticias-lista">
+      {% for noticia in noticias %}
+        {% set score = noticia.score_sentimento %}
+        {% if score is not none %}
+          {% if score > 0.05 %}
+            {% set classe = 'positivo' %}
+            {% set icon = '▲' %}
+          {% elif score < -0.05 %}
+            {% set classe = 'negativo' %}
+            {% set icon = '▼' %}
+          {% else %}
+            {% set classe = 'neutro' %}
+            {% set icon = '◆' %}
+          {% endif %}
+        {% else %}
+          {% set classe = 'sem-score' %}
+          {% set icon = '?' %}
+        {% endif %}
+
+        <div class="noticia-item">
+
+          <!-- Badge de sentimento -->
+          <div class="score-badge {{ classe }}">
+            <span class="score-num">
+              {% if score is not none %}{{ '%+.2f' % score }}{% else %}—{% endif %}
+            </span>
+            <span class="score-icon">{{ icon }}</span>
+          </div>
+
+          <!-- Corpo da notícia -->
+          <div class="noticia-corpo">
+            <div class="noticia-titulo">{{ noticia.titulo }}</div>
+            <div class="noticia-resumo">
+              {{ noticia.resumo or noticia.conteudo[:180] }}
+            </div>
+            <div class="noticia-tags">
+              {% if noticia.ativo %}
+                <span class="tag ativo">{{ noticia.ativo.ticker | replace('.SA','') }}</span>
+              {% endif %}
+              {% if noticia.fonte %}
+                <span class="tag fonte">{{ noticia.fonte }}</span>
+              {% endif %}
+              <span class="tag data">{{ noticia.data_publicacao.strftime('%d/%m/%Y') }}</span>
+            </div>
+          </div>
+
+          <!-- Ação -->
+          <div class="noticia-acao">
+            <a href="{{ url_for('main.noticia_detalhe', id=noticia.id) }}" class="btn-leia">
+              Leia mais →
+            </a>
+          </div>
+
+        </div>
+      {% else %}
+        <div style="padding:3rem;text-align:center;color:var(--muted);font-size:0.85rem">
+          Nenhuma notícia encontrada com os filtros aplicados.
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- ── Paginação ── -->
+  <div class="paginacao">
+    {% if pagination.has_prev %}
+      <a href="{{ url_for('main.index', page=pagination.prev_num,
+                 data=request.args.get('data'),
+                 assunto=request.args.get('assunto'),
+                 periodo=request.args.get('periodo')) }}">‹</a>
+    {% endif %}
+
+    {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if p %}
+        {% if p == pagination.page %}
+          <span class="atual">{{ p }}</span>
+        {% else %}
+          <a href="{{ url_for('main.index', page=p,
+                     data=request.args.get('data'),
+                     assunto=request.args.get('assunto'),
+                     periodo=request.args.get('periodo')) }}">{{ p }}</a>
+        {% endif %}
+      {% else %}
+        <span style="border:none;background:none">…</span>
+      {% endif %}
+    {% endfor %}
+
+    {% if pagination.has_next %}
+      <a href="{{ url_for('main.index', page=pagination.next_num,
+                 data=request.args.get('data'),
+                 assunto=request.args.get('assunto'),
+                 periodo=request.args.get('periodo')) }}">›</a>
+    {% endif %}
+  </div>
+
+</main>
+
+<footer>
+  Monitor Financeiro BR &nbsp;|&nbsp; Sentimento via VADER &nbsp;|&nbsp; Cotações via yfinance
+</footer>
+
 </body>
 </html>

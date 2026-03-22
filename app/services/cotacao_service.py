@@ -22,14 +22,7 @@ logger = logging.getLogger(__name__)
 # ── 1. Buscar e salvar cotações ───────────────────────────────────────────────
 
 def buscar_cotacoes(ativo: Ativo, dias: int = 90) -> list[Cotacao]:
-    """
-    Baixa os últimos `dias` dias de cotação do ativo via yfinance
-    e persiste apenas os registros ainda não existentes no banco.
 
-    Exemplo de uso:
-        ativo = Ativo.query.filter_by(ticker="PETR4.SA").first()
-        buscar_cotacoes(ativo, dias=180)
-    """
     data_inicio = date.today() - timedelta(days=dias)
 
     try:
@@ -111,10 +104,6 @@ def calcular_correlacao(
     calcula Pearson e Spearman entre score_sentimento e variacao_pct,
     salva o resultado na tabela Correlacao e retorna o objeto.
 
-    Requer que:
-      - Noticia.score_sentimento esteja preenchido
-      - Noticia.ativo_id aponte para este ativo
-      - Cotacao.variacao_pct esteja disponível no período
     """
     data_fim    = data_fim    or date.today()
     data_inicio = data_inicio or (data_fim - timedelta(days=90))
