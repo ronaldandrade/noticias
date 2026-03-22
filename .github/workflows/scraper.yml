@@ -1,22 +1,15 @@
 # .github/workflows/scraper.yml
 #
 # Chama o endpoint do scraper no Render automaticamente.
-# 100% gratuito — usa os minutos gratuitos do GitHub Actions.
 #
-# Setup:
-#   1. Crie o secret no GitHub:
-#      Repositório → Settings → Secrets and variables → Actions → New secret
-#      Nome:  CRON_SECRET
-#      Valor: a mesma senha que você colocou no Render
-#
-#   2. Ajuste a URL abaixo para a URL real do seu site no Render
+
 
 name: Atualizar notícias
 
 on:
   schedule:
     - cron: '0 9,15,21 * * *'   # roda às 9h, 15h e 21h (UTC) todo dia
-  workflow_dispatch:              # permite rodar manualmente pelo GitHub
+  workflow_dispatch:              
 
 jobs:
   scraper:
