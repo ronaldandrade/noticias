@@ -218,16 +218,7 @@ def associar_ativo(
 
 
 def diagnosticar_associacao(titulo: str, conteudo: str, ativos: list) -> dict:
-    """
-    Versão de debug: retorna a pontuação de todos os ativos para uma notícia.
-    Útil para entender por que uma notícia foi associada a um ativo específico.
-
-    Uso:
-        from app.services.associacao_service import diagnosticar_associacao
-        from app.models import Ativo
-        ativos = Ativo.query.all()
-        print(diagnosticar_associacao("Dólar sobe com tensão externa", "", ativos))
-    """
+    
     texto_titulo   = titulo.upper()
     texto_conteudo = conteudo[:600].upper()
     ativo_map      = {a.ticker: a for a in ativos}
