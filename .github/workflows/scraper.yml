@@ -26,7 +26,7 @@ jobs:
     steps:
       - name: Chamar endpoint de atualização
         run: |
-          curl -s -X POST https://SEU-SITE.onrender.com/admin/cron/atualizar \
+          curl -s -X POST https://noticias-skp8.onrender.com/admin/cron/atualizar \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
             --fail \
