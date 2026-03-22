@@ -15,6 +15,7 @@ from nltk.corpus import stopwords
 from collections import Counter
 import os
 
+
 nltk.data.path.append(os.path.join(os.path.dirname(__file__), '../nltk_data'))
 
 admin_bp    = Blueprint("admin",    __name__, url_prefix="/admin")
@@ -26,8 +27,6 @@ relatorio_bp = Blueprint("relatorio", __name__, url_prefix="/relatorio")
 
 @bp.route('/', methods=['GET'])
 def index():
-    from .models import Noticia, Ativo
-    from sqlalchemy import func
  
     data_filtro    = request.args.get('data',    None)
     assunto_filtro = request.args.get('assunto', None)
