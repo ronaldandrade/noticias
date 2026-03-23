@@ -74,14 +74,23 @@ def index():
     )
 @bp.route('/atualizar')
 def atualizar():
-    """
-    Raspa novas notícias E já calcula score de sentimento na coleta.
-    O scraper novo já faz isso internamente — não precisa chamar
-    aplicar_scores_em_lote separadamente aqui.
-    """
-    buscar_noticias()
-    return redirect(url_for('main.index'))
+    import threading
+    def rodar():
+        with bp.app.app_context() if hasattr(bp, 'app') else __import__('flask').current_app._get_current_object().app_context():
+            buscar_noticias()
 
+    from flask import current_app
+    app = current_app._get_current_object()
+
+    def rodar_em_background():
+        with app.app_context():
+            buscar_noticias()
+
+    thread = threading.Thread(target=rodar_em_background)
+    thread.daemon = True
+    thread.start()
+
+    return redirect(url_for('main.index'))
 
 @bp.route('/noticia/<int:id>')
 def noticia_detalhe(id):
