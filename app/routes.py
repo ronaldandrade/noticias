@@ -75,23 +75,21 @@ def index():
 @bp.route('/atualizar')
 def atualizar():
     import threading
-    def rodar():
-        with bp.app.app_context() if hasattr(bp, 'app') else __import__('flask').current_app._get_current_object().app_context():
-            buscar_noticias()
-
     from flask import current_app
+
     app = current_app._get_current_object()
 
     def rodar_em_background():
         with app.app_context():
-            buscar_noticias()
+            try:
+                buscar_noticias()
+            except Exception as e:
+                app.logger.error(f"Erro no scraper em background: {e}")
 
-    thread = threading.Thread(target=rodar_em_background)
-    thread.daemon = True
+    thread = threading.Thread(target=rodar_em_background, daemon=True)
     thread.start()
 
     return redirect(url_for('main.index'))
-
 @bp.route('/noticia/<int:id>')
 def noticia_detalhe(id):
     noticia = Noticia.query.get_or_404(id)

@@ -20,7 +20,7 @@ from .services.assossiacao_service import associar_ativo
 
 logger = logging.getLogger(__name__)
 
-REQUEST_TIMEOUT = 12
+REQUEST_TIMEOUT = 8
 DELAY_ENTRE_SITES = 1.5  # segundos — evita bloqueio por rate limit
 
 HEADERS = {
@@ -303,7 +303,7 @@ def _raspar_html(fonte: dict, ativos: list[Ativo]) -> list[dict]:
     if not cards:
         cards = soup.select("article") or soup.select("div.post") or soup.select("li.item")
 
-    for card in cards[:30]:  # máximo 30 por página
+    for card in cards[:15]:  # máximo 15 por página
         # Extrai título
         titulo_el = card.select_one(fonte["seletor_titulo"])
         if not titulo_el:
