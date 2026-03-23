@@ -83,10 +83,9 @@ KEYWORDS_PONDERADAS: dict[str, dict[str, int]] = {
         "IBOVESPA":      5,
         "IBOV":          4,
         "BVSP":          4,
-        "B3":            2,   # reduzido — muito genérico
+        "B3":            2,  
         "BOLSA DE VALORES": 2,
         "BOVESPA":       3,
-        # Removido "BOLSA" puro — genérico demais
     },
 
     "^GSPC": {
@@ -119,7 +118,6 @@ KEYWORDS_PONDERADAS: dict[str, dict[str, int]] = {
         "DÓLAR HOJE":    5,
         "USD/BRL":       6,
         "REAL BRASILEIRO": 3,
-        # NÃO inclui "REAL" sozinho — muito genérico
     },
 
     "EURUSD=X": {
@@ -140,7 +138,6 @@ KEYWORDS_PONDERADAS: dict[str, dict[str, int]] = {
         "WTI":           5,
         "CRUDE OIL":     5,
         "BARRIL":        3,
-        # "PETRÓLEO" sozinho NÃO está aqui — conflita com PETR4
     },
 
     "BZ=F": {
