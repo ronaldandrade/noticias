@@ -49,6 +49,7 @@ FONTES_HTML = [
         "nome": "InfoMoney PETR4",
         "url": "https://www.infomoney.com.br/tudo-sobre/petrobras/",
         "ticker_hint": "PETR4.SA",
+        "hint_forte": True,
         "seletor_item": "article.blocco, div.card-news, h2.title-news",
         "seletor_titulo": "h2, h3, .title, a",
         "base_url": "https://www.infomoney.com.br",
@@ -57,6 +58,7 @@ FONTES_HTML = [
         "nome": "InfoMoney VALE3",
         "url": "https://www.infomoney.com.br/tudo-sobre/vale/",
         "ticker_hint": "VALE3.SA",
+        "hint_forte": True,
         "seletor_item": "article.blocco, div.card-news, h2.title-news",
         "seletor_titulo": "h2, h3, .title, a",
         "base_url": "https://www.infomoney.com.br",
@@ -65,6 +67,7 @@ FONTES_HTML = [
         "nome": "InfoMoney ITUB4",
         "url": "https://www.infomoney.com.br/tudo-sobre/itau/",
         "ticker_hint": "ITUB4.SA",
+        "hint_forte": True,
         "seletor_item": "article.blocco, div.card-news, h2.title-news",
         "seletor_titulo": "h2, h3, .title, a",
         "base_url": "https://www.infomoney.com.br",
@@ -73,6 +76,7 @@ FONTES_HTML = [
         "nome": "InfoMoney Mercados",
         "url": "https://www.infomoney.com.br/mercados/",
         "ticker_hint": "^BVSP",
+        "hint_forte": False,
         "seletor_item": "article.blocco, div.card-news",
         "seletor_titulo": "h2, h3, .title",
         "base_url": "https://www.infomoney.com.br",
@@ -83,6 +87,7 @@ FONTES_HTML = [
         "nome": "G1 Economia",
         "url": "https://g1.globo.com/economia/",
         "ticker_hint": "^BVSP",
+        "hint_forte": False,
         "seletor_item": "div.feed-post, div.bastian-feed-item",
         "seletor_titulo": "a.feed-post-link, .gui-color-primary",
         "base_url": "https://g1.globo.com",
@@ -93,6 +98,7 @@ FONTES_HTML = [
         "nome": "Exame Economia",
         "url": "https://exame.com/economia/",
         "ticker_hint": "^BVSP",
+        "hint_forte": False,
         "seletor_item": "article, div.card",
         "seletor_titulo": "h2, h3, a",
         "base_url": "https://exame.com",
@@ -101,6 +107,7 @@ FONTES_HTML = [
         "nome": "Exame Mercados",
         "url": "https://exame.com/invest/mercados/",
         "ticker_hint": "^BVSP",
+        "hint_forte": False,
         "seletor_item": "article, div.card",
         "seletor_titulo": "h2, h3, a",
         "base_url": "https://exame.com",
@@ -109,6 +116,7 @@ FONTES_HTML = [
         "nome": "Exame Petróleo & Energia",
         "url": "https://exame.com/invest/commodities/petroleo/",
         "ticker_hint": "PETR4.SA",
+        "hint_forte": False,
         "seletor_item": "article, div.card",
         "seletor_titulo": "h2, h3, a",
         "base_url": "https://exame.com",
@@ -119,6 +127,7 @@ FONTES_HTML = [
         "nome": "UOL Economia",
         "url": "https://economia.uol.com.br/",
         "ticker_hint": "^BVSP",
+        "hint_forte": False,
         "seletor_item": "article, div.thumbnails-item",
         "seletor_titulo": "h2, h3, .title",
         "base_url": "https://economia.uol.com.br",
@@ -137,6 +146,7 @@ FONTES_HTML = [
         "nome": "Suno PETR4",
         "url": "https://www.suno.com.br/acoes/petr4/",
         "ticker_hint": "PETR4.SA",
+        "hint_forte": True,
         "seletor_item": "article, div.post-card",
         "seletor_titulo": "h2, h3, .entry-title",
         "base_url": "https://www.suno.com.br",
@@ -145,6 +155,7 @@ FONTES_HTML = [
         "nome": "Suno VALE3",
         "url": "https://www.suno.com.br/acoes/vale3/",
         "ticker_hint": "VALE3.SA",
+        "hint_forte": True,
         "seletor_item": "article, div.post-card",
         "seletor_titulo": "h2, h3, .entry-title",
         "base_url": "https://www.suno.com.br",
@@ -153,6 +164,7 @@ FONTES_HTML = [
         "nome": "Suno ITUB4",
         "url": "https://www.suno.com.br/acoes/itub4/",
         "ticker_hint": "ITUB4.SA",
+        "hint_forte": True,
         "seletor_item": "article, div.post-card",
         "seletor_titulo": "h2, h3, .entry-title",
         "base_url": "https://www.suno.com.br",
@@ -171,6 +183,7 @@ FONTES_HTML = [
         "nome": "InfoMoney RSS Mercados",
         "url": "https://www.infomoney.com.br/mercados/feed/",
         "ticker_hint": "^BVSP",
+        "hint_forte": False,
         "seletor_item": None,
         "seletor_titulo": None,
         "base_url": "",
@@ -179,6 +192,7 @@ FONTES_HTML = [
         "nome": "Exame RSS",
         "url": "https://exame.com/feed/",
         "ticker_hint": "^BVSP",
+        "hint_forte": False,
         "seletor_item": None,
         "seletor_titulo": None,
         "base_url": "",
@@ -187,6 +201,7 @@ FONTES_HTML = [
         "nome": "UOL RSS Economia",
         "url": "https://rss.uol.com.br/feed/economia.xml",
         "ticker_hint": "^BVSP",
+        "hint_forte": False,
         "seletor_item": None,
         "seletor_titulo": None,
         "base_url": "",
@@ -346,10 +361,12 @@ def _raspar_html(fonte: dict, ativos: list[Ativo]) -> list[dict]:
 
 # ── Montagem de Noticia ───────────────────────────────────────────────────────
 
-def _montar_noticia(item: dict, fonte_nome: str, ativos: list[Ativo], num_frases: int) -> Noticia:
+def _montar_noticia(item: dict, ativos: list[Ativo], num_frases: int) -> Noticia:
     titulo   = item["titulo"]
     conteudo = item["conteudo"]
-    ativo_id = item["ativo_id_hint"] or associar_ativo(titulo, conteudo, ativos)
+    ativo_id = associar_ativo(titulo, conteudo, ativos)
+    if ativo_id is None and item.get("hint_forte") and item.get("ativo_id_hint"):
+        ativo_id = item["ativo_id_hint"]
     score    = calcular_score(f"{titulo}. {conteudo}")
 
     try:
@@ -361,7 +378,6 @@ def _montar_noticia(item: dict, fonte_nome: str, ativos: list[Ativo], num_frases
         titulo=titulo,
         conteudo=conteudo,
         url=item["link"],
-        # fonte=fonte_nome,
         data_publicacao=item["data"],
         resumo=resumo,
         score_sentimento=score,
