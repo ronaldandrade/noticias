@@ -108,7 +108,6 @@ def cmd_reatribuir():
 @click.option("--dias", default=90, help="Janela de dias para cotações e correlações.")
 def cmd_tudo(dias):
     """Roda o pipeline completo: scraper → scoring → correlações."""
-    from flask import current_app
     from app.scraper import buscar_noticias
     from app.services.cotacao_service import buscar_cotacoes_todos_ativos, calcular_correlacao_todos
     from app.services.sentimento_service import aplicar_scores_em_lote

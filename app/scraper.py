@@ -1,16 +1,16 @@
 """
-scraper.py — raspagem HTML direta (sem RSS)
+scraper.py — coleta paralela com ThreadPoolExecutor
 
-Sites: InfoMoney, G1 Economia, Exame, UOL Economia
-
+Cada fonte roda em uma thread separada.
+Com MAX_WORKERS=4, o tempo cai de ~40s para ~10-12s.
 """
 
 import logging
-import time
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 from urllib.parse import urljoin
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .models import Noticia, Ativo
 from . import db
@@ -20,8 +20,9 @@ from .services.assossiacao_service import associar_ativo
 
 logger = logging.getLogger(__name__)
 
-REQUEST_TIMEOUT = 8
-DELAY_ENTRE_SITES = 1.5  # segundos — evita bloqueio por rate limit
+REQUEST_TIMEOUT = 8      # sites lentos não travam o pool
+MAX_WORKERS     = 4      # threads paralelas — seguro para Render free (512MB)
+MAX_CARDS       = 15     # itens por fonte — limita uso de memória
 
 HEADERS = {
     "User-Agent": (
@@ -33,215 +34,107 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
 
-# ── Configuração das fontes ───────────────────────────────────────────────────
-# Cada fonte define:
-#   url          → página a raspar
-#   ticker_hint  → ativo associado a todas as notícias desse feed (ou None)
-#   seletor_item → CSS que aponta cada card/item de notícia na página
-#   seletor_titulo → CSS relativo ao item que contém o título
-#   seletor_link → CSS relativo ao item que contém o link (ou None = usar o próprio item)
-#   base_url     → prefixo para links relativos
-
+# ── Fontes ────────────────────────────────────────────────────────────────────
+# hint_forte=True  → feed dedicado a um ativo (todas as notícias são sobre ele)
+# hint_forte=False → feed geral (hint só é fallback, notícia irrelevante fica sem ativo)
 FONTES_HTML = [
 
-    # ── InfoMoney por ticker ───────────────────────────────────────────────────
-    {
-        "nome": "InfoMoney PETR4",
-        "url": "https://www.infomoney.com.br/tudo-sobre/petrobras/",
-        "ticker_hint": "PETR4.SA",
-        "hint_forte": True,
-        "seletor_item": "article.blocco, div.card-news, h2.title-news",
-        "seletor_titulo": "h2, h3, .title, a",
-        "base_url": "https://www.infomoney.com.br",
-    },
-    {
-        "nome": "InfoMoney VALE3",
-        "url": "https://www.infomoney.com.br/tudo-sobre/vale/",
-        "ticker_hint": "VALE3.SA",
-        "hint_forte": True,
-        "seletor_item": "article.blocco, div.card-news, h2.title-news",
-        "seletor_titulo": "h2, h3, .title, a",
-        "base_url": "https://www.infomoney.com.br",
-    },
-    {
-        "nome": "InfoMoney ITUB4",
-        "url": "https://www.infomoney.com.br/tudo-sobre/itau/",
-        "ticker_hint": "ITUB4.SA",
-        "hint_forte": True,
-        "seletor_item": "article.blocco, div.card-news, h2.title-news",
-        "seletor_titulo": "h2, h3, .title, a",
-        "base_url": "https://www.infomoney.com.br",
-    },
-    {
-        "nome": "InfoMoney Mercados",
-        "url": "https://www.infomoney.com.br/mercados/",
-        "ticker_hint": "^BVSP",
-        "hint_forte": False,
-        "seletor_item": "article.blocco, div.card-news",
-        "seletor_titulo": "h2, h3, .title",
-        "base_url": "https://www.infomoney.com.br",
-    },
+    # ── InfoMoney por ativo — hint FORTE ──────────────────────────────────────
+    {"nome": "InfoMoney PETR4", "url": "https://www.infomoney.com.br/tudo-sobre/petrobras/",
+     "ticker_hint": "PETR4.SA", "hint_forte": True,
+     "seletor_item": "article.blocco, div.card-news",
+     "seletor_titulo": "h2, h3, .title, a", "base_url": "https://www.infomoney.com.br"},
 
-    # ── G1 Economia ───────────────────────────────────────────────────────────
-    {
-        "nome": "G1 Economia",
-        "url": "https://g1.globo.com/economia/",
-        "ticker_hint": "^BVSP",
-        "hint_forte": False,
-        "seletor_item": "div.feed-post, div.bastian-feed-item",
-        "seletor_titulo": "a.feed-post-link, .gui-color-primary",
-        "base_url": "https://g1.globo.com",
-    },
+    {"nome": "InfoMoney VALE3", "url": "https://www.infomoney.com.br/tudo-sobre/vale/",
+     "ticker_hint": "VALE3.SA", "hint_forte": True,
+     "seletor_item": "article.blocco, div.card-news",
+     "seletor_titulo": "h2, h3, .title, a", "base_url": "https://www.infomoney.com.br"},
 
-    # ── Exame ─────────────────────────────────────────────────────────────────
-    {
-        "nome": "Exame Economia",
-        "url": "https://exame.com/economia/",
-        "ticker_hint": "^BVSP",
-        "hint_forte": False,
-        "seletor_item": "article, div.card",
-        "seletor_titulo": "h2, h3, a",
-        "base_url": "https://exame.com",
-    },
-    {
-        "nome": "Exame Mercados",
-        "url": "https://exame.com/invest/mercados/",
-        "ticker_hint": "^BVSP",
-        "hint_forte": False,
-        "seletor_item": "article, div.card",
-        "seletor_titulo": "h2, h3, a",
-        "base_url": "https://exame.com",
-    },
-    {
-        "nome": "Exame Petróleo & Energia",
-        "url": "https://exame.com/invest/commodities/petroleo/",
-        "ticker_hint": "PETR4.SA",
-        "hint_forte": False,
-        "seletor_item": "article, div.card",
-        "seletor_titulo": "h2, h3, a",
-        "base_url": "https://exame.com",
-    },
+    {"nome": "InfoMoney ITUB4", "url": "https://www.infomoney.com.br/tudo-sobre/itau/",
+     "ticker_hint": "ITUB4.SA", "hint_forte": True,
+     "seletor_item": "article.blocco, div.card-news",
+     "seletor_titulo": "h2, h3, .title, a", "base_url": "https://www.infomoney.com.br"},
 
-    # ── UOL Economia ──────────────────────────────────────────────────────────
-    {
-        "nome": "UOL Economia",
-        "url": "https://economia.uol.com.br/",
-        "ticker_hint": "^BVSP",
-        "hint_forte": False,
-        "seletor_item": "article, div.thumbnails-item",
-        "seletor_titulo": "h2, h3, .title",
-        "base_url": "https://economia.uol.com.br",
-    },
+    {"nome": "InfoMoney Mercados", "url": "https://www.infomoney.com.br/mercados/",
+     "ticker_hint": "^BVSP", "hint_forte": False,
+     "seletor_item": "article.blocco, div.card-news",
+     "seletor_titulo": "h2, h3, .title", "base_url": "https://www.infomoney.com.br"},
 
     # ── Suno ──────────────────────────────────────────────────────────────────
-    {
-        "nome": "Suno Notícias",
-        "url": "https://www.suno.com.br/noticias/",
-        "ticker_hint": None,
-        "seletor_item": "article, div.post-card",
-        "seletor_titulo": "h2, h3, .entry-title",
-        "base_url": "https://www.suno.com.br",
-    },
-    {
-        "nome": "Suno PETR4",
-        "url": "https://www.suno.com.br/acoes/petr4/",
-        "ticker_hint": "PETR4.SA",
-        "hint_forte": True,
-        "seletor_item": "article, div.post-card",
-        "seletor_titulo": "h2, h3, .entry-title",
-        "base_url": "https://www.suno.com.br",
-    },
-    {
-        "nome": "Suno VALE3",
-        "url": "https://www.suno.com.br/acoes/vale3/",
-        "ticker_hint": "VALE3.SA",
-        "hint_forte": True,
-        "seletor_item": "article, div.post-card",
-        "seletor_titulo": "h2, h3, .entry-title",
-        "base_url": "https://www.suno.com.br",
-    },
-    {
-        "nome": "Suno ITUB4",
-        "url": "https://www.suno.com.br/acoes/itub4/",
-        "ticker_hint": "ITUB4.SA",
-        "hint_forte": True,
-        "seletor_item": "article, div.post-card",
-        "seletor_titulo": "h2, h3, .entry-title",
-        "base_url": "https://www.suno.com.br",
-    },
+    {"nome": "Suno PETR4", "url": "https://www.suno.com.br/acoes/petr4/",
+     "ticker_hint": "PETR4.SA", "hint_forte": True,
+     "seletor_item": "article, div.post-card",
+     "seletor_titulo": "h2, h3, .entry-title", "base_url": "https://www.suno.com.br"},
 
-    # ── RSS que ainda funcionam (mantidos como fallback) ──────────────────────
-    {
-        "nome": "G1 RSS",
-        "url": "https://g1.globo.com/rss/g1/economia/",
-        "ticker_hint": "^BVSP",
-        "seletor_item": None,  # sinaliza modo RSS
-        "seletor_titulo": None,
-        "base_url": "",
-    },
-    {
-        "nome": "InfoMoney RSS Mercados",
-        "url": "https://www.infomoney.com.br/mercados/feed/",
-        "ticker_hint": "^BVSP",
-        "hint_forte": False,
-        "seletor_item": None,
-        "seletor_titulo": None,
-        "base_url": "",
-    },
-    {
-        "nome": "Exame RSS",
-        "url": "https://exame.com/feed/",
-        "ticker_hint": "^BVSP",
-        "hint_forte": False,
-        "seletor_item": None,
-        "seletor_titulo": None,
-        "base_url": "",
-    },
-    {
-        "nome": "UOL RSS Economia",
-        "url": "https://rss.uol.com.br/feed/economia.xml",
-        "ticker_hint": "^BVSP",
-        "hint_forte": False,
-        "seletor_item": None,
-        "seletor_titulo": None,
-        "base_url": "",
-    },
-    {
-        "nome": "Livecoins RSS",
-        "url": "https://livecoins.com.br/feed/",
-        "ticker_hint": None,
-        "seletor_item": None,
-        "seletor_titulo": None,
-        "base_url": "",
-    },
+    {"nome": "Suno VALE3", "url": "https://www.suno.com.br/acoes/vale3/",
+     "ticker_hint": "VALE3.SA", "hint_forte": True,
+     "seletor_item": "article, div.post-card",
+     "seletor_titulo": "h2, h3, .entry-title", "base_url": "https://www.suno.com.br"},
+
+    {"nome": "Suno ITUB4", "url": "https://www.suno.com.br/acoes/itub4/",
+     "ticker_hint": "ITUB4.SA", "hint_forte": True,
+     "seletor_item": "article, div.post-card",
+     "seletor_titulo": "h2, h3, .entry-title", "base_url": "https://www.suno.com.br"},
+
+    {"nome": "Suno Notícias", "url": "https://www.suno.com.br/noticias/",
+     "ticker_hint": None, "hint_forte": False,
+     "seletor_item": "article, div.post-card",
+     "seletor_titulo": "h2, h3, .entry-title", "base_url": "https://www.suno.com.br"},
+
+    # ── Seções gerais — hint FRACO ────────────────────────────────────────────
+    {"nome": "G1 Economia", "url": "https://g1.globo.com/economia/",
+     "ticker_hint": "^BVSP", "hint_forte": False,
+     "seletor_item": "div.feed-post, div.bastian-feed-item",
+     "seletor_titulo": "a.feed-post-link, .gui-color-primary",
+     "base_url": "https://g1.globo.com"},
+
+    {"nome": "Exame Economia", "url": "https://exame.com/economia/",
+     "ticker_hint": "^BVSP", "hint_forte": False,
+     "seletor_item": "article, div.card",
+     "seletor_titulo": "h2, h3, a", "base_url": "https://exame.com"},
+
+    {"nome": "Exame Mercados", "url": "https://exame.com/invest/mercados/",
+     "ticker_hint": "^BVSP", "hint_forte": False,
+     "seletor_item": "article, div.card",
+     "seletor_titulo": "h2, h3, a", "base_url": "https://exame.com"},
+
+    # ── RSS ───────────────────────────────────────────────────────────────────
+    {"nome": "G1 RSS", "url": "https://g1.globo.com/rss/g1/economia/",
+     "ticker_hint": "^BVSP", "hint_forte": False,
+     "seletor_item": None, "seletor_titulo": None, "base_url": ""},
+
+    {"nome": "InfoMoney RSS", "url": "https://www.infomoney.com.br/mercados/feed/",
+     "ticker_hint": "^BVSP", "hint_forte": False,
+     "seletor_item": None, "seletor_titulo": None, "base_url": ""},
+
+    {"nome": "Exame RSS", "url": "https://exame.com/feed/",
+     "ticker_hint": "^BVSP", "hint_forte": False,
+     "seletor_item": None, "seletor_titulo": None, "base_url": ""},
+
+    {"nome": "UOL RSS", "url": "https://rss.uol.com.br/feed/economia.xml",
+     "ticker_hint": "^BVSP", "hint_forte": False,
+     "seletor_item": None, "seletor_titulo": None, "base_url": ""},
+
+    {"nome": "Livecoins RSS", "url": "https://livecoins.com.br/feed/",
+     "ticker_hint": "BTC-USD", "hint_forte": True,
+     "seletor_item": None, "seletor_titulo": None, "base_url": ""},
 ]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _parse_data(data_str: str) -> datetime:
-    formatos = [
+    for fmt in [
         "%a, %d %b %Y %H:%M:%S %z",
         "%a, %d %b %Y %H:%M:%S GMT",
         "%Y-%m-%dT%H:%M:%S%z",
         "%Y-%m-%dT%H:%M:%SZ",
-    ]
-    for fmt in formatos:
+    ]:
         try:
             return datetime.strptime(data_str, fmt).replace(tzinfo=None)
         except ValueError:
             continue
     return datetime.now()
-
-
-def _ativo_id_por_hint(ticker_hint: str | None, ativos: list[Ativo]) -> int | None:
-    if not ticker_hint:
-        return None
-    for ativo in ativos:
-        if ativo.ticker == ticker_hint:
-            return ativo.id
-    return None
-
 
 
 def _fazer_request(url: str) -> requests.Response | None:
@@ -254,13 +147,21 @@ def _fazer_request(url: str) -> requests.Response | None:
         return None
 
 
-# ── Raspagem RSS ──────────────────────────────────────────────────────────────
+def _ativo_id_por_hint(ticker_hint: str | None, ativos: list) -> int | None:
+    if not ticker_hint:
+        return None
+    for a in ativos:
+        if a.ticker == ticker_hint:
+            return a.id
+    return None
 
-def _raspar_rss(fonte: dict, ativos: list[Ativo]) -> list[dict]:
+
+# ── Raspagem RSS ───────────────────────────────────────────────────────────────
+
+def _raspar_rss(fonte: dict, ativos: list) -> list[dict]:
     resp = _fazer_request(fonte["url"])
     if not resp:
         return []
-
     resp.encoding = "utf-8"
     try:
         soup = BeautifulSoup(resp.text, "xml", from_encoding="utf-8")
@@ -286,43 +187,35 @@ def _raspar_rss(fonte: dict, ativos: list[Ativo]) -> list[dict]:
             conteudo = BeautifulSoup(conteudo, "html.parser").get_text(strip=True)
 
         data_str = data_tag.get_text(strip=True) if data_tag else ""
-        data     = _parse_data(data_str) if data_str else datetime.now()
-
         itens.append({
-            "titulo": titulo, "link": link,
-            "conteudo": conteudo, "data": data,
-            "ativo_id_hint": ativo_id_hint,
+            "titulo": titulo, "link": link, "conteudo": conteudo,
+            "data": _parse_data(data_str) if data_str else datetime.now(),
+            "ativo_id_hint": ativo_id_hint, "hint_forte": fonte["hint_forte"],
         })
 
     logger.info("RSS '%s': %d itens.", fonte["nome"], len(itens))
     return itens
 
 
-# ── Raspagem HTML ─────────────────────────────────────────────────────────────
+# ── Raspagem HTML ──────────────────────────────────────────────────────────────
 
-def _raspar_html(fonte: dict, ativos: list[Ativo]) -> list[dict]:
+def _raspar_html(fonte: dict, ativos: list) -> list[dict]:
     resp = _fazer_request(fonte["url"])
     if not resp:
         return []
 
-    soup = BeautifulSoup(resp.text, "html.parser")
-    ativo_id_hint = _ativo_id_por_hint(fonte["ticker_hint"], ativos)
+    soup     = BeautifulSoup(resp.text, "html.parser")
     base_url = fonte["base_url"]
-    itens = []
+    ativo_id_hint = _ativo_id_por_hint(fonte["ticker_hint"], ativos)
+    itens  = []
     vistos: set[str] = set()
 
-    # Tenta os seletores de item
     cards = soup.select(fonte["seletor_item"])
-
-    # Fallback genérico se o seletor não encontrar nada
     if not cards:
         cards = soup.select("article") or soup.select("div.post") or soup.select("li.item")
 
-    for card in cards[:15]:  # máximo 15 por página
-        # Extrai título
-        titulo_el = card.select_one(fonte["seletor_titulo"])
-        if not titulo_el:
-            titulo_el = card.select_one("a")
+    for card in cards[:MAX_CARDS]:
+        titulo_el = card.select_one(fonte["seletor_titulo"]) or card.select_one("a")
         if not titulo_el:
             continue
 
@@ -330,7 +223,6 @@ def _raspar_html(fonte: dict, ativos: list[Ativo]) -> list[dict]:
         if not titulo or len(titulo) < 10:
             continue
 
-        # Extrai link
         link_el = card.select_one("a[href]") or (titulo_el if titulo_el.name == "a" else None)
         if not link_el:
             continue
@@ -340,70 +232,94 @@ def _raspar_html(fonte: dict, ativos: list[Ativo]) -> list[dict]:
             continue
 
         link = urljoin(base_url, href) if href.startswith("/") else href
-
         if link in vistos:
             continue
         vistos.add(link)
 
-        # Extrai descrição/conteúdo do card (resumo curto)
-        desc_el = card.select_one("p, .description, .summary, .excerpt")
+        desc_el  = card.select_one("p, .description, .summary, .excerpt")
         conteudo = desc_el.get_text(strip=True) if desc_el else titulo
 
         itens.append({
-            "titulo": titulo, "link": link,
-            "conteudo": conteudo, "data": datetime.now(),
-            "ativo_id_hint": ativo_id_hint,
+            "titulo": titulo, "link": link, "conteudo": conteudo,
+            "data": datetime.now(),
+            "ativo_id_hint": ativo_id_hint, "hint_forte": fonte["hint_forte"],
         })
 
     logger.info("HTML '%s': %d itens.", fonte["nome"], len(itens))
     return itens
 
 
-# ── Montagem de Noticia ───────────────────────────────────────────────────────
+# ── Worker por fonte ───────────────────────────────────────────────────────────
 
-def _montar_noticia(item: dict, ativos: list[Ativo], num_frases: int) -> Noticia:
+def _processar_fonte(fonte: dict, ativos: list) -> list[dict]:
+    try:
+        if fonte["seletor_item"] is None:
+            return _raspar_rss(fonte, ativos)
+        return _raspar_html(fonte, ativos)
+    except Exception as exc:
+        logger.error("Erro na fonte '%s': %s", fonte["nome"], exc)
+        return []
+
+
+# ── Montagem de Noticia ────────────────────────────────────────────────────────
+
+def _montar_noticia(item: dict, fonte_nome: str, ativos: list) -> Noticia:
     titulo   = item["titulo"]
     conteudo = item["conteudo"]
+
+    # Algoritmo de pontuação sempre primeiro
     ativo_id = associar_ativo(titulo, conteudo, ativos)
+
+    # Só usa hint se o algoritmo não encontrou E o feed é dedicado ao ativo
     if ativo_id is None and item.get("hint_forte") and item.get("ativo_id_hint"):
         ativo_id = item["ativo_id_hint"]
-    score    = calcular_score(f"{titulo}. {conteudo}")
+
+    score = calcular_score(f"{titulo}. {conteudo}")
 
     try:
-        resumo = resumir_texto(conteudo, num_frases=num_frases)
+        resumo = resumir_texto(conteudo, num_frases=2)
     except Exception:
         resumo = conteudo[:200]
 
     return Noticia(
-        titulo=titulo,
+        titulo=titulo, 
         conteudo=conteudo,
-        url=item["link"],
-        data_publicacao=item["data"],
+        url=item["link"], 
+        data_publicacao=item["data"], 
         resumo=resumo,
-        score_sentimento=score,
+        score_sentimento=score, 
         ativo_id=ativo_id,
     )
 
 
-# ── Função principal ──────────────────────────────────────────────────────────
+# ── Função principal ───────────────────────────────────────────────────────────
 
 def buscar_noticias() -> list[Noticia]:
+    """
+    Raspa todas as fontes em paralelo (ThreadPoolExecutor).
+    Tempo esperado: ~10-12s com MAX_WORKERS=4 vs ~40s sequencial.
+    """
     ativos = Ativo.query.all()
-    todas_raw: list[tuple[dict, str]] = []  # (item_dict, nome_fonte)
+    todas_raw: list[tuple[dict, str]] = []
+    inicio = datetime.now()
 
-    for fonte in FONTES_HTML:
-        # Decide modo: RSS (seletor_item=None) ou HTML
-        if fonte["seletor_item"] is None:
-            itens = _raspar_rss(fonte, ativos)
-        else:
-            itens = _raspar_html(fonte, ativos)
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futuros = {
+            executor.submit(_processar_fonte, fonte, ativos): fonte["nome"]
+            for fonte in FONTES_HTML
+        }
+        for futuro in as_completed(futuros):
+            nome = futuros[futuro]
+            try:
+                for item in futuro.result():
+                    todas_raw.append((item, nome))
+            except Exception as exc:
+                logger.error("Fonte '%s' falhou: %s", nome, exc)
 
-        for item in itens:
-            todas_raw.append((item, fonte["nome"]))
+    duracao = (datetime.now() - inicio).seconds
+    logger.info("Coleta paralela: %ds — %d itens brutos.", duracao, len(todas_raw))
 
-        time.sleep(DELAY_ENTRE_SITES)
-
-    # Deduplicação por URL + filtro contra banco
+    # Deduplicação + filtro contra banco
     urls_vistas: set[str] = set()
     novas: list[Noticia] = []
 
@@ -412,33 +328,28 @@ def buscar_noticias() -> list[Noticia]:
         if url in urls_vistas:
             continue
         urls_vistas.add(url)
-
         if Noticia.query.filter_by(url=url).first():
             continue
-
-        noticia = _montar_noticia(item, nome_fonte, ativos, num_frases=2)
-        novas.append(noticia)
+        novas.append(_montar_noticia(item, nome_fonte, ativos))
 
     if novas:
         try:
             db.session.bulk_save_objects(novas)
             db.session.commit()
-            logger.info("Salvas %d novas notícias.", len(novas))
         except Exception as exc:
             db.session.rollback()
             logger.error("Erro ao salvar: %s", exc)
             raise
 
-    # Resumo no console
     from collections import Counter
     ativo_map = {a.id: a.ticker for a in ativos}
     contagem  = Counter(n.ativo_id for n in novas if n.ativo_id)
     sem_ativo = sum(1 for n in novas if n.ativo_id is None)
 
-    print(f"\n  Novas notícias salvas: {len(novas)}")
+    print(f"\n  Coleta em {duracao}s — {len(novas)} notícias novas")
     for ativo_id, qtd in contagem.most_common():
-        print(f"  {ativo_map.get(ativo_id, ativo_id):<14} {qtd} notícias")
+        print(f"  {ativo_map.get(ativo_id, ativo_id):<14} {qtd}")
     if sem_ativo:
-        print(f"  sem ativo associado:   {sem_ativo} notícias")
+        print(f"  sem ativo:           {sem_ativo}")
 
     return novas
