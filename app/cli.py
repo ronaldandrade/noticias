@@ -4,12 +4,13 @@ app/cli.py
 Comandos Flask para rodar o pipeline pelo terminal.
 
 Uso:
-    flask pipeline scraper          # coleta novas notícias
-    flask pipeline scoring          # calcula scores e correlações
-    flask pipeline reatribuir       # reatribui notícias aos ativos
-    flask pipeline tudo             # roda tudo em sequência
-    flask pipeline status           # mostra contagens do banco
-    flask pipeline resetar-scores   # zera scores para recalcular
+    flask pipeline scraper              # coleta novas notícias
+    flask pipeline scoring              # calcula scores e correlações
+    flask pipeline reatribuir           # reatribui notícias aos ativos
+    flask pipeline tudo                 # roda tudo em sequência
+    flask pipeline status               # mostra contagens do banco
+    flask pipeline cotacoes --dias **     # baixa cotações dos últimos (qtd dias) dias para todos os ativos
+    flask pipeline resetar-scores       # zera scores para recalcular
 """
 
 import click
@@ -163,6 +164,14 @@ def cmd_status():
         if n_total > 0:
             click.echo(f"  {ativo.ticker:<14} {n_total:>9} {n_score:>10}")
 
+@pipeline.command("cotacoes")
+@click.option("--dias", default=90, help="Número de dias para retroagir.")
+def cmd_cotacoes(dias):
+    """Baixa cotações históricas para todos os ativos cadastrados."""
+    from .services.cotacao_service import buscar_cotacoes_todos_ativos
+    click.echo(f"Atualizando cotações (últimos {dias} dias)...")
+    buscar_cotacoes_todos_ativos(dias=dias)
+    click.echo("Cotações atualizadas com sucesso.")
 
 @pipeline.command("resetar-scores")
 @click.confirmation_option(prompt="Isso vai zerar todos os scores. Confirma?")
