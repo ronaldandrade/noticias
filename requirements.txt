@@ -14,3 +14,4 @@ scipy==1.17.1
 SQLAlchemy==2.0.48
 vaderSentiment==3.3.2
 yfinance==1.2.0
+psycopg2-binary
