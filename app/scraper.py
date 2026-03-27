@@ -352,4 +352,17 @@ def buscar_noticias() -> list[Noticia]:
     if sem_ativo:
         print(f"  sem ativo:           {sem_ativo}")
 
-    return novas
+    if novas:
+        try:
+            # Usar add_all é mais seguro para debugar do que bulk_save_objects
+            # pois o SQLAlchemy valida melhor os estados dos objetos
+            db.session.add_all(novas)
+            db.session.commit()
+            logger.info("%d novas notícias persistidas com sucesso.", len(novas))
+        except Exception as exc:
+            db.session.rollback()
+            logger.error("Erro crítico ao salvar no banco: %s", exc)
+            # Em vez de raise, talvez retornar a lista vazia para não quebrar o app
+            return [] 
+
+        return novas
