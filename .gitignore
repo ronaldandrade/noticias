@@ -3,6 +3,7 @@ schema.db
 pyvenv.cfg
 __pycache__/
 .vscode 
+.env
 
 # Ignore all .pyc files
 *.pyc       
