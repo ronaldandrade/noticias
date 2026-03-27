@@ -21,10 +21,4 @@ def create_app():
     from .cli import pipeline
     app.cli.add_command(pipeline)
 
-    with app.app_context():
-        db.create_all()
-
     return app
-
-
-app = create_app()
