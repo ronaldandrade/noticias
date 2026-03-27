@@ -334,15 +334,12 @@ def buscar_noticias() -> list[Noticia]:
 
     if novas:
         try:
-            from sqlalchemy.orm import Session
-            with db.engine.connect() as conn:
-                with Session(conn) as session:
-                    session.bulk_save_objects(novas)
-                    session.commit()
-            logger.info("Salvas %d notícias no Supabase.", len(novas))
+            db.session.add_all(novas)   
+            db.session.commit()
+            logger.info(f"Sucesso: {len(novas)} notícias salvas.")
         except Exception as exc:
-            logger.error("Erro ao salvar: %s", exc)
-            raise
+            db.session.rollback()
+            logger.error(f"Erro ao salvar: {exc}")
     from collections import Counter
     ativo_map = {a.id: a.ticker for a in ativos}
     contagem  = Counter(n.ativo_id for n in novas if n.ativo_id)
