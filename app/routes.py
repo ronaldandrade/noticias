@@ -84,12 +84,12 @@ def atualizar():
             try:
                 buscar_noticias()
             except Exception as e:
-                app.logger.error(f"Erro no scraper em background: {e}")
+                app.logger.error(f"Erro no scraper: {e}")
 
     thread = threading.Thread(target=rodar_em_background, daemon=True)
     thread.start()
-
     return redirect(url_for('main.index'))
+
 @bp.route('/noticia/<int:id>')
 def noticia_detalhe(id):
     noticia = Noticia.query.get_or_404(id)
