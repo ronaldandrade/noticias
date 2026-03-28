@@ -11,7 +11,6 @@ from datetime import date, timedelta
 import yfinance as yf
 import pandas as pd
 from scipy import stats
-from curl_cffi.requests import Session
 
 from ..models import Ativo, Cotacao, Correlacao, Noticia
 from .. import db
@@ -85,21 +84,14 @@ def buscar_cotacoes(ativo: Ativo, dias: int = 90) -> list[Cotacao]:
 
     return novas
 
-def buscar_cotacoes_todos_ativos(dias=90):
+def buscar_cotacoes_todos_ativos(dias: int = 90) -> None:
+    """Atualiza cotações de todos os ativos cadastrados."""
     ativos = Ativo.query.all()
-    # Criamos a sessão que "engana" o firewall do Yahoo
-    session = Session(impersonate="chrome")
-    
     for ativo in ativos:
         try:
-            # Passamos a sessão explicitamente aqui
-            df = yf.download(ativo.ticker, period=f"{dias}d", session=session)
-            if not df.empty:
-                ativos = Ativo.query.all()
-                for ativo in ativos:
-                    buscar_cotacoes(ativo, dias=dias)
+            buscar_cotacoes(ativo, dias=dias)
         except Exception as e:
-            logger.error(f"Erro em {ativo.ticker}: {e}")
+            logger.error("Erro ao buscar cotações de %s: %s", ativo.ticker, e)
 
 # ── 2. Calcular correlação sentimento × retorno ───────────────────────────────
 

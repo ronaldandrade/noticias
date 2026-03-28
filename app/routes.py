@@ -83,10 +83,11 @@ def atualizar():
         with app.app_context():
             try:
                 buscar_noticias()
-                buscar_cotacoes_todos_ativos(dias=5)
-                app.logger.info("Pipeline de notícias e cotações concluído.")
+                buscar_cotacoes_todos_ativos(dias=7)
+                aplicar_scores_em_lote(limite=200)
+                app.logger.info("Pipeline concluído com sucesso.")
             except Exception as e:
-                app.logger.error(f"Erro no scraper: {e}")
+                app.logger.error(f"Erro no pipeline: {e}")
 
     thread = threading.Thread(target=rodar_em_background, daemon=True)
     thread.start()
@@ -147,14 +148,15 @@ def dashboard():
 
 @admin_bp.post("/cron/atualizar")
 def cron_atualizar():
-    """Chamado pelo Render Cron Job automaticamente."""
+    """Chamado pelo GitHub Actions automaticamente."""
     secret = request.headers.get("X-Cron-Secret", "")
     if secret != os.environ.get("CRON_SECRET", ""):
         return jsonify({"erro": "não autorizado"}), 401
 
     buscar_noticias()
-    buscar_cotacoes_todos_ativos(dias=1)
+    buscar_cotacoes_todos_ativos(dias=7)
     n = aplicar_scores_em_lote(limite=500)
+    calcular_correlacao_todos(dias=90)
 
     return jsonify({"status": "ok", "scores_atualizados": n})
 
