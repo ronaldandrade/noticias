@@ -9,7 +9,7 @@ Uso:
     flask pipeline reatribuir           # reatribui notícias aos ativos
     flask pipeline tudo                 # roda tudo em sequência
     flask pipeline status               # mostra contagens do banco
-    flask pipeline cotacoes --dias **     # baixa cotações dos últimos (qtd dias) dias para todos os ativos
+    flask pipeline cotacoes --dias **   # baixa cotações dos últimos (qtd dias) dias para todos os ativos
     flask pipeline resetar-scores       # zera scores para recalcular
 """
 

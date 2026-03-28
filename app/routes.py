@@ -83,7 +83,7 @@ def atualizar():
         with app.app_context():
             try:
                 buscar_noticias()
-                buscar_cotacoes_todos_ativos(dias=7)
+                buscar_cotacoes_todos_ativos(dias=1)
                 aplicar_scores_em_lote(limite=200)
                 app.logger.info("Pipeline concluído com sucesso.")
             except Exception as e:
@@ -154,7 +154,7 @@ def cron_atualizar():
         return jsonify({"erro": "não autorizado"}), 401
 
     buscar_noticias()
-    buscar_cotacoes_todos_ativos(dias=7)
+    buscar_cotacoes_todos_ativos(dias=1)
     n = aplicar_scores_em_lote(limite=500)
     calcular_correlacao_todos(dias=90)
 
