@@ -274,6 +274,7 @@
   }
 
   .tag.ativo    { background: rgba(79,156,249,0.12); color: var(--accent); }
+  .tag.categoria { background: rgba(195, 176, 252, 0.12); color: var(--neu); }
   .tag.fonte    { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
   .tag.data     { color: var(--muted); }
   .tag.corr-pos { background: rgba(52,211,153,0.1); color: var(--pos); }
@@ -423,8 +424,22 @@
             <option value="">Todos</option>
             <option value="semana" {% if request.args.get('periodo') == 'semana' %}selected{% endif %}>Última semana</option>
             <option value="mes"    {% if request.args.get('periodo') == 'mes'    %}selected{% endif %}>Último mês</option>
-          </select>
+            </select>
+              <select name="categoria">
+        <option value="">Todas as categorias</option>
+        <option value="mercado_financeiro">Mercado Financeiro</option>
+        <option value="política">Política</option>
+        <option value="economia_geral">Economia Geral</option>
+        <option value="internacional">Internacional</option>
+        <option value="tecnologia">Tecnologia</option>
+        <option value="energia">Energia</option>
+        <option value="agronegócio">Agronegócio</option>
+        <option value="saúde">Saúde</option>
+        <option value="entretenimento">Entretenimento</option>
+        <option value="geral">Geral</option>
+    </select>
         </div>
+        
         <div style="display:flex;gap:0.5rem;margin-left:auto">
           <a href="/" class="btn">Limpar</a>
           <button type="submit" class="btn primary">Filtrar</button>
@@ -473,15 +488,25 @@
             <div class="noticia-resumo">
               {{ noticia.resumo or noticia.conteudo[:180] }}
             </div>
-            <div class="noticia-tags">
-              {% if noticia.ativo %}
-                <span class="tag ativo">{{ noticia.ativo.ticker | replace('.SA','') }}</span>
-              {% endif %}
-              {% if noticia.fonte %}
-                <span class="tag fonte">{{ noticia.fonte }}</span>
-              {% endif %}
-              <span class="tag data">{{ noticia.data_publicacao.strftime('%d/%m/%Y') }}</span>
-            </div>
+                <div class="noticia-tags">
+                  {# Se houver um ativo, mostra o Ticker #}
+                  {% if noticia.ativo %}
+                    <span class="tag ativo">{{ noticia.ativo.ticker | replace('.SA','') }}</span>
+                  
+                  {# Se NÃO houver ativo, mas houver uma categoria (NER), mostra o Assunto #}
+                  {% elif noticia.categoria %}
+                    <span class="tag categoria">{{ noticia.categoria | upper }}</span>
+                  
+                  {# Fallback: Caso não tenha nenhum dos dois #}
+                  {% else %}
+                    <span class="tag geral">GERAL</span>
+                  {% endif %}
+
+                  {% if noticia.fonte %}
+                    <span class="tag fonte">{{ noticia.fonte }}</span>
+                  {% endif %}
+                  <span class="tag data">{{ noticia.data_publicacao.strftime('%d/%m/%Y') }}</span>
+                </div>            </div>
           </div>
 
           <!-- Ação -->

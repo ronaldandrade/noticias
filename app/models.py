@@ -13,6 +13,7 @@ class Noticia(db.Model):
     resumo = db.Column(db.Text)
     score_sentimento = db.Column(db.Float, nullable=True)
     ativo_id         = db.Column(db.Integer, db.ForeignKey('ativo.id'), nullable=True)
+    categoria = db.Column(db.String(50), nullable=True)
 
 
 

@@ -7,6 +7,7 @@ from .services.cotacao_service import (
 )
 from .services.relatorio_service import gerar_dados_relatorio
 from .services.termometro_service import gerar_termometro
+from .services.ner_service import aplicar_ner_em_lote
 from .scraper import buscar_noticias
 from . import db
 from .repository import filtrar_noticias
@@ -33,6 +34,7 @@ def index():
     data_filtro    = request.args.get('data',    None)
     assunto_filtro = request.args.get('assunto', None)
     periodo        = request.args.get('periodo', None)
+    categoria_filtro = request.args.get('categoria', None)
     page           = request.args.get('page', default=1, type=int)
  
     noticias_paginadas = filtrar_noticias(
@@ -87,6 +89,7 @@ def atualizar():
                 buscar_noticias()
                 buscar_cotacoes_todos_ativos(dias=1)
                 aplicar_scores_em_lote(limite=200)
+                aplicar_ner_em_lote(limite=200)
                 app.logger.info("Pipeline concluído com sucesso.")
             except Exception as e:
                 app.logger.error(f"Erro no pipeline: {e}")

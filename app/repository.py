@@ -1,9 +1,12 @@
 from .models import Noticia
 from . import db
 from datetime import datetime, timedelta
+from flask import request
 
 def filtrar_noticias(data_filtro=None, assunto_filtro=None, periodo=None, page=1, per_page=10):
     query = Noticia.query
+
+    categoria_filtro = request.args.get('categoria', None)
     
     if data_filtro:
         try:
@@ -12,6 +15,9 @@ def filtrar_noticias(data_filtro=None, assunto_filtro=None, periodo=None, page=1
         except ValueError:
             pass
     
+    if categoria_filtro:
+        query = query.filter(Noticia.categoria == categoria_filtro)
+        
     if assunto_filtro:
         palavras = assunto_filtro.split()
         for palavra in palavras:

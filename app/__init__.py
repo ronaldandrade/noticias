@@ -23,3 +23,4 @@ def create_app():
     app.cli.add_command(pipeline)
 
     return app
+

@@ -17,6 +17,8 @@ from . import db
 from .services.resume_text_service import resumir_texto
 from .services.sentimento_service import calcular_score
 from .services.assossiacao_service import associar_ativo
+from .services.ner_service import processar_noticia
+
 
 logger = logging.getLogger(__name__)
 
@@ -273,7 +275,10 @@ def _montar_noticia(item: dict, fonte_nome: str, ativos: list) -> Noticia:
     # Só usa hint se o algoritmo não encontrou E o feed é dedicado ao ativo
     if ativo_id is None and item.get("hint_forte") and item.get("ativo_id_hint"):
         ativo_id = item["ativo_id_hint"]
-
+        
+    resultado_ner = processar_noticia(titulo, conteudo, ativos, ativo_id)
+    ativo_id  = resultado_ner["ativo_id"]
+    categoria = resultado_ner["categoria"]
     score = calcular_score(f"{titulo}. {conteudo}")
 
     try:
@@ -289,6 +294,7 @@ def _montar_noticia(item: dict, fonte_nome: str, ativos: list) -> Noticia:
         resumo=resumo,
         score_sentimento=score, 
         ativo_id=ativo_id,
+        categoria=categoria,
     )
 
 

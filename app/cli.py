@@ -180,3 +180,16 @@ def cmd_resetar():
     from app.services.sentimento_service import resetar_scores
     resetar_scores()
     click.echo("Scores resetados. Rode: flask pipeline scoring")
+
+@pipeline.command("ner")
+@click.option("--limite", default=500)
+def cmd_ner(limite):
+    # \"\"\"Aplica NER e categorização nas notícias sem ativo ou sem categoria.\"\"\"
+    from app.services.ner_service import aplicar_ner_em_lote
+    click.echo("Rodando NER...")
+    stats = aplicar_ner_em_lote(limite=limite)
+    click.echo(f"  Processadas:       {stats['processadas']}")
+    click.echo(f"  Ativos encontrados: {stats['ativo_encontrado']}")
+    click.echo("\\n  Categorias:")
+    for cat, qtd in sorted(stats["categorias"].items(), key=lambda x: -x[1]):
+        click.echo(f"  {cat:<22} {qtd}")
