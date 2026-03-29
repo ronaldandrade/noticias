@@ -83,9 +83,10 @@ KEYWORDS_PONDERADAS: dict[str, dict[str, int]] = {
         "IBOVESPA":      5,
         "IBOV":          4,
         "BVSP":          4,
-        "B3":            2,  
+        "B3":            2,   # reduzido — muito genérico
         "BOLSA DE VALORES": 2,
         "BOVESPA":       3,
+        # Removido "BOLSA" puro — genérico demais
     },
 
     "^GSPC": {
@@ -118,6 +119,7 @@ KEYWORDS_PONDERADAS: dict[str, dict[str, int]] = {
         "DÓLAR HOJE":    5,
         "USD/BRL":       6,
         "REAL BRASILEIRO": 3,
+        # NÃO inclui "REAL" sozinho — muito genérico
     },
 
     "EURUSD=X": {
@@ -138,6 +140,7 @@ KEYWORDS_PONDERADAS: dict[str, dict[str, int]] = {
         "WTI":           5,
         "CRUDE OIL":     5,
         "BARRIL":        3,
+        # "PETRÓLEO" sozinho NÃO está aqui — conflita com PETR4
     },
 
     "BZ=F": {
@@ -158,6 +161,155 @@ KEYWORDS_PONDERADAS: dict[str, dict[str, int]] = {
         "ETHEREUM":      5,
         "ETH":           4,
         "ETHER":         4,
+    },
+
+    # ── Telecom BR ────────────────────────────────────────────────────────────
+
+    "OIBR3": {
+        "OIBR3":         10,
+        "OIBR4":         10,
+        "OI S.A":         6,
+        "OI SA":          6,
+        "OI FIBRA":       5,
+        "RECUPERAÇÃO JUDICIAL DA OI": 8,
+        "OI TELECOM":     5,
+        # "OI" sozinho NÃO está — palavra comum demais
+    },
+
+    "TIMS3": {
+        "TIMS3":         10,
+        "TIM BRASIL":     6,
+        "TIM S.A":        6,
+        "TIM SA":         5,
+        "TIM CELULAR":    5,
+        # "TIM" sozinho NÃO está — ambíguo demais
+    },
+
+    "VIVT3": {
+        "VIVT3":         10,
+        "VIVO":           5,
+        "TELEFONICA BRASIL": 6,
+        "TELEFÔNICA BRASIL": 6,
+        "TELEFONICA":     4,
+        "TELEFÔNICA":     4,
+    },
+
+    # ── Financeiro BR ─────────────────────────────────────────────────────────
+
+    "BPAC11": {
+        "BPAC11":        10,
+        "BTG PACTUAL":    6,
+        "BTG":            4,
+        "BANCO BTG":      6,
+    },
+
+    "XPBR31": {
+        "XPBR31":        10,
+        "XP INC":         6,
+        "XP INVESTIMENTOS": 6,
+        "XP INVESTIMENTO":  5,
+        "CORRETORA XP":   5,
+        # "XP" sozinho NÃO está — pode ser abreviação de qualquer coisa
+    },
+
+    "BBAS3": {
+        "BBAS3":         10,
+        "BANCO DO BRASIL": 6,
+        "BB INVESTIMENTOS": 5,
+        "BB SEGURIDADE":  4,
+        # "BB" sozinho NÃO está — genérico demais
+    },
+
+    "SANB11": {
+        "SANB11":        10,
+        "SANB3":         10,
+        "SANB4":         10,
+        "SANTANDER BRASIL": 6,
+        "BANCO SANTANDER": 5,
+        "SANTANDER":      4,
+    },
+
+    "INBR32": {
+        "INBR32":        10,
+        "BANCO INTER":    6,
+        "INTER&CO":       6,
+        "INTER CO":       5,
+        "INTER BANK":     5,
+    },
+
+    # ── Energia elétrica ──────────────────────────────────────────────────────
+
+    "ELET3": {
+        "ELET3":         10,
+        "ELET6":         10,
+        "ELETROBRAS":     6,
+        "ELETROBRÁS":     6,
+        "CHESF":          4,
+        "FURNAS":         4,
+        "ELETRONUCLEAR":  4,
+    },
+
+    "CMIG4": {
+        "CMIG4":         10,
+        "CMIG3":         10,
+        "CEMIG":          6,
+        "CIA ENERGETICA MG": 5,
+        "COMPANHIA ENERGÉTICA DE MINAS": 5,
+    },
+
+    "EQTL3": {
+        "EQTL3":         10,
+        "EQUATORIAL ENERGIA": 6,
+        "EQUATORIAL":     5,
+        "CEMAR":          4,
+        "CELPA":          4,
+    },
+
+    # ── Varejo ────────────────────────────────────────────────────────────────
+
+    "AMER3": {
+        "AMER3":         10,
+        "AMERICANAS":     6,
+        "LOJAS AMERICANAS": 6,
+        "AMERICANAS S.A": 6,
+        "AMERICANAS SA":  6,
+        "RECUPERAÇÃO JUDICIAL AMERICANAS": 8,
+    },
+
+    "LREN3": {
+        "LREN3":         10,
+        "LOJAS RENNER":   6,
+        "RENNER":         5,
+    },
+
+    # ── Mobilidade ────────────────────────────────────────────────────────────
+
+    "RENT3": {
+        "RENT3":         10,
+        "LOCALIZA":       6,
+        "LOCALIZA HERTZ": 5,
+        "LOCALIZA&CO":    6,
+    },
+
+    # ── Alimentos / Bebidas ───────────────────────────────────────────────────
+
+    "JBSS3": {
+        "JBSS3":         10,
+        "JBS S.A":        6,
+        "JBS SA":         6,
+        "JBS FRIBOI":     5,
+        "JBS":            4,
+        "FRIBOI":         4,
+    },
+
+    "ABEV3": {
+        "ABEV3":         10,
+        "AMBEV":          6,
+        "AMBEV S.A":      6,
+        "ANHEUSER":       4,
+        "BRAHMA":         3,
+        "ANTARCTICA":     3,
+        "SKOL":           2,
     },
 }
 
@@ -215,7 +367,16 @@ def associar_ativo(
 
 
 def diagnosticar_associacao(titulo: str, conteudo: str, ativos: list) -> dict:
-    
+    """
+    Versão de debug: retorna a pontuação de todos os ativos para uma notícia.
+    Útil para entender por que uma notícia foi associada a um ativo específico.
+
+    Uso:
+        from app.services.associacao_service import diagnosticar_associacao
+        from app.models import Ativo
+        ativos = Ativo.query.all()
+        print(diagnosticar_associacao("Dólar sobe com tensão externa", "", ativos))
+    """
     texto_titulo   = titulo.upper()
     texto_conteudo = conteudo[:600].upper()
     ativo_map      = {a.ticker: a for a in ativos}

@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Termômetro de Mercado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0d0f14;
+    --surface:  #13161e;
+    --surface2: #1a1e29;
+    --border:   #252a38;
+    --text:     #e8eaf0;
+    --muted:    #7c8499;
+    --accent:   #4f9cf9;
+    --pos:      #34d399;
+    --neg:      #f87171;
+    --neu:      #a78bfa;
+    --gold:     #fbbf24;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-left h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.9rem;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+
+  .header-left p {
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 0.3rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .header-nav { display: flex; gap: 0.5rem; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 1rem;
+    border-radius: 7px;
+    font-size: 0.8rem;
+    font-family: 'DM Mono', monospace;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 3rem 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+
+  /* ── Cards de resumo ── */
+  .resumo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .card {
+    background: var(--surface);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .card-label {
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .card-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .card-value.pos  { color: var(--pos); }
+  .card-value.neg  { color: var(--neg); }
+  .card-value.acc  { color: var(--accent); }
+  .card-value.neu  { color: var(--neu); }
+  .card-value.gold { color: var(--gold); }
+  .card-sub { font-size: 0.72rem; color: var(--muted); }
+
+  /* ── Banner de viradas ── */
+  .viradas-banner {
+    background: rgba(251,191,36,0.07);
+    border: 1px solid rgba(251,191,36,0.25);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .virada-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+  }
+
+  .virada-pill.queda { background: rgba(248,113,113,0.15); color: var(--neg); border: 1px solid rgba(248,113,113,0.3); }
+  .virada-pill.alta  { background: rgba(52,211,153,0.15);  color: var(--pos); border: 1px solid rgba(52,211,153,0.3); }
+
+  .virada-label {
+    font-size: 0.78rem;
+    color: var(--gold);
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+  }
+
+  /* ── Grid de ativos ── */
+  .ativos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+  }
+
+  .ativo-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: border-color 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ativo-card:hover { border-color: rgba(79,156,249,0.4); }
+
+  .ativo-card.virada-queda { border-left: 3px solid var(--neg); }
+  .ativo-card.virada-alta  { border-left: 3px solid var(--pos); }
+
+  /* Barra de sentimento no topo do card */
+  .barra-sentimento {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .barra-sentimento.positivo { background: var(--pos); }
+  .barra-sentimento.negativo { background: var(--neg); }
+  .barra-sentimento.neutro   { background: var(--neu); }
+
+  .ativo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .ativo-info { display: flex; flex-direction: column; gap: 0.2rem; }
+
+  .ativo-ticker {
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--accent);
+  }
+
+  .ativo-nome {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .ativo-setor {
+    font-size: 0.68rem;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    align-self: flex-start;
+    margin-top: 0.2rem;
+  }
+
+  /* Score principal */
+  .score-principal {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+  }
+
+  .score-valor {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.4rem;
+    line-height: 1;
+  }
+
+  .score-valor.positivo { color: var(--pos); }
+  .score-valor.negativo { color: var(--neg); }
+  .score-valor.neutro   { color: var(--neu); }
+  .score-valor.sem-dado { color: var(--muted); font-size: 1.4rem; }
+
+  .score-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding-bottom: 0.3rem;
+  }
+
+  .delta-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 5px;
+    font-size: 0.72rem;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+  }
+
+  .delta-badge.alta  { background: rgba(52,211,153,0.12);  color: var(--pos); }
+  .delta-badge.queda { background: rgba(248,113,113,0.12); color: var(--neg); }
+  .delta-badge.neutro{ background: var(--surface2); color: var(--muted); }
+
+  .virada-tag {
+    font-size: 0.65rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--gold);
+    background: rgba(251,191,36,0.1);
+    border: 1px solid rgba(251,191,36,0.25);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+  }
+
+  /* Barra de histórico (7d vs 30d) */
+  .historico {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .hist-item {
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .hist-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .hist-valor {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-top: 0.1rem;
+  }
+
+  .hist-valor.pos { color: var(--pos); }
+  .hist-valor.neg { color: var(--neg); }
+  .hist-valor.neu { color: var(--muted); }
+
+  /* Cotação */
+  .cotacao-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background: var(--surface2);
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+  }
+
+  .cot-preco { color: var(--text); font-weight: 500; }
+  .cot-var.pos { color: var(--pos); }
+  .cot-var.neg { color: var(--neg); }
+  .cot-var.neu { color: var(--muted); }
+  .cot-data { color: var(--muted); font-size: 0.7rem; }
+
+  /* Últimas notícias do card */
+  .noticias-mini { display: flex; flex-direction: column; gap: 0.4rem; }
+
+  .noticia-mini {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.3;
+  }
+
+  .noticia-mini a {
+    color: var(--muted);
+    text-decoration: none;
+    flex: 1;
+    transition: color 0.1s;
+  }
+
+  .noticia-mini a:hover { color: var(--text); }
+
+  .mini-score {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .mini-score.positivo { background: rgba(52,211,153,0.12); color: var(--pos); }
+  .mini-score.negativo { background: rgba(248,113,113,0.12); color: var(--neg); }
+  .mini-score.neutro   { background: var(--surface2); color: var(--muted); }
+
+  .n-count {
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 1.25rem 3rem;
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  @media (max-width: 768px) {
+    header, main { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .ativos-grid { grid-template-columns: 1fr; }
+    footer { padding-left: 1.25rem; padding-right: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Termômetro de Mercado</h1>
+    <p>
+      Referência: {{ resumo.dia_referencia }}
+      {% if not resumo.eh_hoje %} &nbsp;(último dia com dados){% endif %}
+      &nbsp;·&nbsp; Gerado às {{ gerado_em }}
+    </p>
+  </div>
+  <nav class="header-nav">
+    <a href="/" class="btn">Notícias</a>
+    <a href="/relatorio" class="btn">Relatório</a>
+    <!-- <a href="/atualizar" class="btn primary">↻ Atualizar</a> -->
+  </nav>
+</header>
+
+<main>
+
+  <!-- ── Resumo do mercado ── -->
+  <section>
+    <div class="section-title">Sentimento geral do mercado</div>
+    <div class="resumo-grid">
+      <div class="card">
+        <span class="card-label">Score do mercado</span>
+        <span class="card-value {{ resumo.classe_mercado }}">
+          {% if resumo.score_mercado is not none %}
+            {{ '%+.2f' % resumo.score_mercado }}
+          {% else %}—{% endif %}
+        </span>
+        <span class="card-sub">média entre ativos</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Ativos positivos</span>
+        <span class="card-value pos">{{ resumo.positivos }}</span>
+        <span class="card-sub">score &gt; 0.05</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Ativos negativos</span>
+        <span class="card-value neg">{{ resumo.negativos }}</span>
+        <span class="card-sub">score &lt; −0.05</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Neutros</span>
+        <span class="card-value neu">{{ resumo.neutros }}</span>
+        <span class="card-sub">sem tendência clara</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Viradas detectadas</span>
+        <span class="card-value gold">{{ resumo.viradas }}</span>
+        <span class="card-sub">mudança de sentimento</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Ativos monitorados</span>
+        <span class="card-value acc">{{ resumo.ativos_ativos }}</span>
+        <span class="card-sub">com dados recentes</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Banner de viradas ── -->
+  {% set viradas = ativos | selectattr("variacao.virada") | list %}
+  {% if viradas %}
+  <div class="viradas-banner">
+    <span class="virada-label">Viradas detectadas hoje →</span>
+    {% for a in viradas %}
+      <span class="virada-pill {{ a.variacao.direcao }}">
+        {% if a.variacao.direcao == 'queda' %}▼{% else %}▲{% endif %}
+        {{ a.ticker }}
+        {% if a.variacao.direcao == 'queda' %}virou negativo{% else %}virou positivo{% endif %}
+      </span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ── Grid de ativos ── -->
+  <section>
+    <div class="section-title">Ativos — sentimento detalhado</div>
+    <div class="ativos-grid">
+      {% for a in ativos %}
+        <div class="ativo-card {% if a.variacao.virada %}virada-{{ a.variacao.direcao }}{% endif %}">
+          <div class="barra-sentimento {{ a.classe_hoje }}"></div>
+
+          <!-- Header -->
+          <div class="ativo-header">
+            <div class="ativo-info">
+              <span class="ativo-ticker">{{ a.ticker }}</span>
+              <span class="ativo-nome">{{ a.nome }}</span>
+              <span class="ativo-setor">{{ a.setor }}</span>
+            </div>
+            {% if a.n_noticias > 0 %}
+              <span class="n-count">{{ a.n_noticias }} notícia{% if a.n_noticias > 1 %}s{% endif %}</span>
+            {% endif %}
+          </div>
+
+          <!-- Score principal -->
+          <div class="score-principal">
+            <span class="score-valor {{ a.classe_hoje }}">
+              {% if a.score_hoje is not none %}
+                {{ '%+.2f' % a.score_hoje }}
+              {% else %}
+                <span class="sem-dado">sem dados hoje</span>
+              {% endif %}
+            </span>
+            <div class="score-meta">
+              {% if a.variacao.delta is not none %}
+                <span class="delta-badge {{ a.variacao.direcao }}">
+                  {% if a.variacao.direcao == 'alta' %}▲{% elif a.variacao.direcao == 'queda' %}▼{% else %}—{% endif %}
+                  {{ '%+.2f' % a.variacao.delta }} vs ontem
+                </span>
+              {% endif %}
+              {% if a.variacao.virada %}
+                <span class="virada-tag">virada de sentimento</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Histórico 7d / 30d -->
+          <div class="historico">
+            <div class="hist-item">
+              <div class="hist-label">Média 7 dias</div>
+              <div class="hist-valor {{ 'pos' if a.score_semana and a.score_semana > 0.05 else 'neg' if a.score_semana and a.score_semana < -0.05 else 'neu' }}">
+                {% if a.score_semana is not none %}{{ '%+.3f' % a.score_semana }}{% else %}—{% endif %}
+              </div>
+            </div>
+            <div class="hist-item">
+              <div class="hist-label">Média 30 dias</div>
+              <div class="hist-valor {{ 'pos' if a.score_mes and a.score_mes > 0.05 else 'neg' if a.score_mes and a.score_mes < -0.05 else 'neu' }}">
+                {% if a.score_mes is not none %}{{ '%+.3f' % a.score_mes }}{% else %}—{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Cotação -->
+          {% if a.cotacao %}
+          <div class="cotacao-row">
+            <span class="cot-preco">R$ {{ '%.2f' % a.cotacao.preco }}</span>
+            <span class="cot-var {{ a.cotacao.classe }}">
+              {{ '%+.2f' % a.cotacao.variacao }}%
+            </span>
+            <span class="cot-data">{{ a.cotacao.data }}</span>
+          </div>
+          {% endif %}
+
+          <!-- Últimas notícias -->
+          {% if a.noticias %}
+          <div class="noticias-mini">
+            {% for n in a.noticias %}
+            <div class="noticia-mini">
+              <span class="mini-score {{ n.classe }}">{{ '%+.2f' % n.score }}</span>
+              <a href="{{ n.url }}" target="_blank" rel="noopener">{{ n.titulo[:70] }}{% if n.titulo|length > 70 %}…{% endif %}</a>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Monitor Financeiro BR &nbsp;|&nbsp; Sentimento via VADER &nbsp;|&nbsp; Cotações via yfinance
+</footer>
+
+</body>
+</html>
