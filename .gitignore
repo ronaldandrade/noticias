@@ -1,7 +1,7 @@
 venv/
 schema.db
 pyvenv.cfg
-__pycache__/
+*/__pycache__/*
 .vscode 
 .env
 

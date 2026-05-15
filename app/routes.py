@@ -81,7 +81,7 @@ def atualizar():
     import threading
     from flask import current_app
 
-    app = current_app._get_current_object()
+    app = current_app._get_current_object() 
 
     def rodar_em_background():
         with app.app_context():

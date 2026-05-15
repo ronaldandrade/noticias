@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import Counter
 
 from .models import Noticia, Ativo
 from . import db
@@ -182,13 +183,13 @@ def _raspar_rss(fonte: dict, ativos: list) -> list[dict]:
         if not titulo_tag or not link_tag:
             continue
 
-        titulo   = titulo_tag.get_text(strip=True)
-        link     = link_tag.get_text(strip=True)
-        conteudo = desc_tag.get_text(strip=True) if desc_tag else ""
+        titulo   = str(titulo_tag.get_text(strip=True)) if titulo_tag else ""
+        link     = str(link_tag.get_text(strip=True)) if link_tag else ""
+        conteudo = str(desc_tag.get_text(strip=True)) if desc_tag else ""
         if "<" in conteudo:
-            conteudo = BeautifulSoup(conteudo, "html.parser").get_text(strip=True)
+            conteudo = str(BeautifulSoup(conteudo, "html.parser").get_text(strip=True))
 
-        data_str = data_tag.get_text(strip=True) if data_tag else ""
+        data_str = str(data_tag.get_text(strip=True)) if data_tag else ""
         itens.append({
             "titulo": titulo, "link": link, "conteudo": conteudo,
             "data": _parse_data(data_str) if data_str else datetime.now(),
@@ -221,7 +222,7 @@ def _raspar_html(fonte: dict, ativos: list) -> list[dict]:
         if not titulo_el:
             continue
 
-        titulo = titulo_el.get_text(strip=True)
+        titulo = str(titulo_el.get_text(strip=True))
         if not titulo or len(titulo) < 10:
             continue
 
@@ -229,7 +230,14 @@ def _raspar_html(fonte: dict, ativos: list) -> list[dict]:
         if not link_el:
             continue
 
-        href = link_el.get("href", "")
+        href_val = link_el.get("href")
+        if href_val is None:
+            href = ""
+        else:
+            href = str(href_val) if isinstance(href_val, (str, list)) else ""
+        if isinstance(href, list):
+            href = href[0] if href else ""
+
         if not href or href == "#":
             continue
 
@@ -239,7 +247,7 @@ def _raspar_html(fonte: dict, ativos: list) -> list[dict]:
         vistos.add(link)
 
         desc_el  = card.select_one("p, .description, .summary, .excerpt")
-        conteudo = desc_el.get_text(strip=True) if desc_el else titulo
+        conteudo = str(desc_el.get_text(strip=True)) if desc_el else titulo
 
         itens.append({
             "titulo": titulo, "link": link, "conteudo": conteudo,
@@ -346,7 +354,6 @@ def buscar_noticias() -> list[Noticia]:
         except Exception as exc:
             db.session.rollback()
             logger.error(f"Erro ao salvar: {exc}")
-    from collections import Counter
     ativo_map = {a.id: a.ticker for a in ativos}
     contagem  = Counter(n.ativo_id for n in novas if n.ativo_id)
     sem_ativo = sum(1 for n in novas if n.ativo_id is None)

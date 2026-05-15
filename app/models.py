@@ -1,6 +1,5 @@
 from . import db
 from datetime import datetime
-from . import db
 
 class Noticia(db.Model):
     __tablename__ = 'Noticia'
@@ -15,10 +14,17 @@ class Noticia(db.Model):
     ativo_id         = db.Column(db.Integer, db.ForeignKey('ativo.id'), nullable=True)
     categoria = db.Column(db.String(50), nullable=True)
 
-
-
-# Adicione estas classes ao seu arquivo models.py existente
-# e o campo score_sentimento à sua classe Noticia
+    def __init__(self, titulo: str, conteudo: str, url: str, data_publicacao: datetime,
+                 resumo: str | None = None, score_sentimento: float | None = None,
+                 ativo_id: int | None = None, categoria: str | None = None):
+        self.titulo = titulo
+        self.conteudo = conteudo
+        self.url = url
+        self.data_publicacao = data_publicacao
+        self.resumo = resumo
+        self.score_sentimento = score_sentimento
+        self.ativo_id = ativo_id
+        self.categoria = categoria
 
 # ── Acrescente este campo à sua classe Noticia existente ──────────────────────
 
