@@ -197,6 +197,14 @@ def calcular_correlacao_todos(dias: int = 90) -> list[Correlacao]:
     """Recalcula correlação para todos os ativos cadastrados."""
     data_fim    = date.today()
     data_inicio = data_fim - timedelta(days=dias)
+
+    # Delete existing correlations for this period
+    Correlacao.query.filter(
+        Correlacao.data_inicio == data_inicio,
+        Correlacao.data_fim == data_fim
+    ).delete()
+    db.session.commit()
+
     resultados  = []
 
     for ativo in Ativo.query.all():
