@@ -11,6 +11,7 @@ from datetime import date, timedelta
 import yfinance as yf
 import pandas as pd
 from scipy import stats
+from sqlalchemy.exc import SQLAlchemyError
 
 from ..models import Ativo, Cotacao, Correlacao, Noticia
 from .. import db
@@ -194,22 +195,27 @@ def calcular_correlacao(
 
 
 def calcular_correlacao_todos(dias: int = 90) -> list[Correlacao]:
-    """Recalcula correlação para todos os ativos cadastrados."""
-    data_fim    = date.today()
+    """
+    Recalcula correlação para todos os ativos cadastrados.
+    Mantém apenas o cálculo mais recente no banco de dados.
+    """
+    data_fim = date.today()
     data_inicio = data_fim - timedelta(days=dias)
+    resultados = []
 
-    # Delete existing correlations for this period
-    Correlacao.query.filter(
-        Correlacao.data_inicio == data_inicio,
-        Correlacao.data_fim == data_fim
-    ).delete()
-    db.session.commit()
+    try:
+        Correlacao.query.delete() 
+        
+        for ativo in Ativo.query.all():
+            nova_correlacao = calcular_correlacao(ativo, data_inicio, data_fim)
+            
+            if nova_correlacao:
+                resultados.append(nova_correlacao)
 
-    resultados  = []
+        db.session.commit()
+        return resultados
 
-    for ativo in Ativo.query.all():
-        c = calcular_correlacao(ativo, data_inicio, data_fim)
-        if c:
-            resultados.append(c)
-
-    return resultados
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logging.error(f"Erro ao calcular correlações: {e}")
+        return []

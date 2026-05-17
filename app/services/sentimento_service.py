@@ -44,15 +44,15 @@ LEXICO_FINANCEIRO = {
     "demissão": -1.5, "demissões": -1.8, "corte": -1.2, "cortes": -1.2,
     "rombo": -2.5, "dívida": -1.2, "endividamento": -1.5,
     "inadimplência": -2.0, "desvalorização": -2.0,
-    # Positivos EN
-    "profit": 2.5, "gains": 2.0, "growth": 2.0, "record": 2.5,
-    "dividend": 1.5, "rally": 2.0, "surge": 2.0, "beat": 1.8,
-    "upgrade": 2.0, "bullish": 2.2, "recovery": 1.8,
-    # Negativos EN
-    "loss": -2.0, "losses": -2.0, "decline": -1.8, "crash": -3.0,
-    "bankruptcy": -3.5, "fraud": -3.0, "downgrade": -2.3,
-    "bearish": -2.2, "recession": -2.5, "selloff": -2.0,
-    "slump": -1.8, "plunge": -2.5,
+    # # Positivos EN
+    # "profit": 2.5, "gains": 2.0, "growth": 2.0, "record": 2.5,
+    # "dividend": 1.5, "rally": 2.0, "surge": 2.0, "beat": 1.8,
+    # "upgrade": 2.0, "bullish": 2.2, "recovery": 1.8,
+    # # Negativos EN
+    # "loss": -2.0, "losses": -2.0, "decline": -1.8, "crash": -3.0,
+    # "bankruptcy": -3.5, "fraud": -3.0, "downgrade": -2.3,
+    # "bearish": -2.2, "recession": -2.5, "selloff": -2.0,
+    # "slump": -1.8, "plunge": -2.5,
 }
 
 _analyzer.lexicon.update(LEXICO_FINANCEIRO)
