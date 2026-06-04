@@ -207,7 +207,7 @@ def _raspar_html(fonte: dict, ativos: list) -> list[dict]:
     if not resp:
         return []
 
-    soup     = BeautifulSoup(resp.text, "html.parser")
+    soup     = BeautifulSoup(resp.content, "html.parser")
     base_url = fonte["base_url"]
     ativo_id_hint = _ativo_id_por_hint(fonte["ticker_hint"], ativos)
     itens  = []
