@@ -1,6 +1,6 @@
 # .github/workflows/scraper.yml
 #
-# Chama o endpoint do scraper no Render automaticamente.
+# Chama o endpoint do scraper no Fly.io automaticamente.
 #
 
 
@@ -19,7 +19,7 @@ jobs:
     steps:
       - name: Chamar endpoint de atualização
         run: |
-          curl -s -X POST https://noticias-skp8.onrender.com/admin/cron/atualizar \
+          curl -s -X POST https://noticias.fly.dev/admin/cron/atualizar \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
             --fail \
