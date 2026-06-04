@@ -16,8 +16,6 @@ titulos = df['titulo'].tolist()
 amostra_titulos = titulos[:200]
 rotulos = [1 if s == 'Positivo' else 0 for s in df['sentimento'][:200]]
 
-# 2. Configuração do Pipeline
-##Remove o vazamento de dados (Data Leakage) e automatiza a vetorização e a classificação em um único objeto. O modelo SVC é escolhido por sua eficácia em textos curtos.
 
 stopwords_pt = ['e', 'em', 'de', 'para', 'com', 'que', 'do', 'da', 'no', 'na', 'o', 'a', 'as', 'os']
 

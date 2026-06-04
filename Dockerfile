@@ -1,8 +1,7 @@
-FROM python:3.11-slim
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-# Dependências de sistema necessárias para psycopg2, lxml e spaCy
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
@@ -11,13 +10,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade "setuptools>=80.9.0" "wheel>=0.46.2" && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Modelo spaCy português
 RUN python -m spacy download pt_core_news_sm
 
-# Dados NLTK necessários
 RUN python -c "import nltk; nltk.download('stopwords'); nltk.download('punkt'); nltk.download('punkt_tab')"
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libxml2 \
+    libxslt1.1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin/gunicorn /usr/local/bin/gunicorn
+COPY --from=builder /root/nltk_data /root/nltk_data
 
 COPY . .
 
