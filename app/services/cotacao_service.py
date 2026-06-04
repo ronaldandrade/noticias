@@ -180,6 +180,7 @@ def calcular_correlacao(
     )
 
     try:
+        Correlacao.query.filter_by(ativo_id=ativo.id).delete()
         db.session.add(correlacao)
         db.session.commit()
         logger.info(
