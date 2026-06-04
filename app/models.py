@@ -1,5 +1,19 @@
 from . import db
 from datetime import datetime
+from flask_login import UserMixin
+
+class User(UserMixin, db.Model):
+    __tablename__ = "user"
+
+    id            = db.Column(db.Integer, primary_key=True)
+    email         = db.Column(db.String(150), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    nome          = db.Column(db.String(100), nullable=True)
+    criado_em     = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<User {self.email}>"
+
 
 class Noticia(db.Model):
     __tablename__ = 'Noticia'

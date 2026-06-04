@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify, flash
+from flask_login import login_required, current_user
 from .models import Noticia, Ativo
 from .services.sentimento_service import aplicar_scores_em_lote
 from .services.cotacao_service import (
@@ -29,6 +30,7 @@ termometro_bp = Blueprint("termometro", __name__, url_prefix="/termometro")
 # ── Rotas principais ──────────────────────────────────────────────────────────
 
 @bp.route('/', methods=['GET'])
+@login_required
 def index():
  
     data_filtro    = request.args.get('data',    None)
@@ -77,6 +79,7 @@ def index():
         total_com_ativo=total_com_ativo,
     )
 @bp.route('/atualizar')
+@login_required
 def atualizar():
     import threading
     from flask import current_app
@@ -99,12 +102,14 @@ def atualizar():
     return redirect(url_for('main.index'))
 
 @bp.route('/noticia/<int:id>')
+@login_required
 def noticia_detalhe(id):
     noticia = Noticia.query.get_or_404(id)
     return render_template('noticia.html', noticia=noticia)
 
 
 @bp.route('/dashboard', methods=['GET'])
+@login_required
 def dashboard():
     data_filtro    = request.args.get('data',    None)
     assunto_filtro = request.args.get('assunto', None)
@@ -169,6 +174,7 @@ def cron_atualizar():
 # ── Relatório ─────────────────────────────────────────────────────────────────
 
 @relatorio_bp.get("/")
+@login_required
 def relatorio():
     dias  = int(request.args.get("dias", 90))
     dados = gerar_dados_relatorio(dias=dias)
@@ -177,6 +183,7 @@ def relatorio():
 # ── Termômetro ─────────────────────────────────────────────────────────────────
 
 @termometro_bp.get("/")
+@login_required
 def termometro():
     dados = gerar_termometro()
     return render_template("termometro.html", **dados)

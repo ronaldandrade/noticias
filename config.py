@@ -17,3 +17,4 @@ class Config:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     DEBUG = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-in-production")
