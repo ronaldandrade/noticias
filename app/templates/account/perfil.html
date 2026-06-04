@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minha Conta — Monitor Financeiro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14; --surface: #13161e; --surface2: #1a1e29;
+    --border: #252a38; --text: #e8eaf0; --muted: #7c8499;
+    --accent: #4f9cf9; --neg: #f87171; --pos: #34d399; --gold: #fbbf24;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 300; min-height: 100vh; }
+  header { border-bottom: 1px solid var(--border); padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 1.4rem; font-weight: 400; }
+  .nav-link { color: var(--accent); text-decoration: none; font-size: 0.85rem; font-family: 'DM Mono', monospace; }
+  .container { max-width: 860px; margin: 2.5rem auto; padding: 0 2rem; display: flex; flex-direction: column; gap: 2rem; }
+  .section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.75rem; }
+  .section-title { font-family: 'DM Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 1.25rem; }
+  .campo { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
+  label { font-family: 'DM Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  input[type="text"], input[type="email"], input[type="password"] {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    padding: 0.6rem 0.85rem; border-radius: 8px; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; outline: none;
+  }
+  input:focus { border-color: var(--accent); }
+  .btn { padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.85rem; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; border: none; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-danger { background: rgba(248,113,113,0.15); color: var(--neg); border: 1px solid rgba(248,113,113,0.3); }
+  .plan-badge { display: inline-block; padding: 0.3rem 0.8rem; border-radius: 20px; font-family: 'DM Mono', monospace; font-size: 0.72rem; }
+  .badge-free { background: rgba(124,132,153,0.15); color: var(--muted); }
+  .badge-pro { background: rgba(251,191,36,0.15); color: var(--gold); }
+  .badge-enterprise { background: rgba(79,156,249,0.15); color: var(--accent); }
+  .plan-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .plan-info { flex: 1; }
+  .plan-info p { font-size: 0.85rem; color: var(--muted); margin-top: 0.35rem; }
+  .keys-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
+  .key-item { display: flex; align-items: center; justify-content: space-between; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; gap: 1rem; flex-wrap: wrap; }
+  .key-meta { flex: 1; }
+  .key-nome { font-size: 0.9rem; font-weight: 500; }
+  .key-prefix { font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--muted); }
+  .key-stats { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+  .new-key-form { display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; }
+  .new-key-form .campo { margin-bottom: 0; flex: 1; min-width: 200px; }
+  .flash-container { margin-bottom: 0; }
+  .flash { border-radius: 8px; padding: 0.7rem 0.9rem; margin-bottom: 0.75rem; font-size: 0.85rem; word-break: break-all; }
+  .flash.info  { background: rgba(79,156,249,0.1);  border: 1px solid rgba(79,156,249,0.3);  color: var(--accent); }
+  .flash.error { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); color: var(--neg); }
+  .flash.api_key { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); color: var(--pos); font-family: 'DM Mono', monospace; font-size: 0.8rem; }
+  .link-upgrade { color: var(--accent); text-decoration: none; font-size: 0.85rem; }
+  .link-upgrade:hover { text-decoration: underline; }
+  .empty-state { color: var(--muted); font-size: 0.85rem; padding: 1rem 0; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Monitor Financeiro</h1>
+  <a href="{{ url_for('main.index') }}" class="nav-link">← Feed</a>
+</header>
+
+<div class="container">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Perfil -->
+  <div class="section">
+    <div class="section-title">Perfil</div>
+    <form method="POST" action="{{ url_for('account.perfil_update') }}">
+      <div class="campo">
+        <label>Nome</label>
+        <input type="text" name="nome" value="{{ current_user.nome or '' }}" placeholder="Seu nome">
+      </div>
+      <div class="campo">
+        <label>E-mail</label>
+        <input type="email" value="{{ current_user.email }}" disabled>
+      </div>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </form>
+  </div>
+
+  <!-- Alterar senha -->
+  <div class="section">
+    <div class="section-title">Alterar Senha</div>
+    <form method="POST" action="{{ url_for('account.alterar_senha') }}">
+      <div class="campo">
+        <label>Senha atual</label>
+        <input type="password" name="senha_atual" required>
+      </div>
+      <div class="campo">
+        <label>Nova senha</label>
+        <input type="password" name="nova_senha" required minlength="8">
+      </div>
+      <div class="campo">
+        <label>Confirmar nova senha</label>
+        <input type="password" name="confirmacao" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Alterar senha</button>
+    </form>
+  </div>
+
+  <!-- Plano e assinatura -->
+  <div class="section">
+    <div class="section-title">Plano & Assinatura</div>
+    <div class="plan-row">
+      <div class="plan-info">
+        <span class="plan-badge badge-{{ plano.nome if plano else 'free' }}">
+          {{ plano.display_nome if plano else 'Grátis' }}
+        </span>
+        {% if subscription and subscription.periodo_fim %}
+          <p>Renova em {{ subscription.periodo_fim.strftime('%d/%m/%Y') }}</p>
+        {% elif plano and plano.nome == 'free' %}
+          <p>Plano gratuito — <a href="{{ url_for('billing.planos') }}" class="link-upgrade">fazer upgrade</a></p>
+        {% endif %}
+      </div>
+      {% if subscription and subscription.stripe_subscription_id %}
+        <form method="POST" action="{{ url_for('billing.portal') }}">
+          <button type="submit" class="btn btn-primary">Gerenciar assinatura</button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('billing.planos') }}" class="btn btn-primary">Ver planos</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- API Keys -->
+  <div class="section">
+    <div class="section-title">API Keys</div>
+
+    {% if plano and plano.acesso_api %}
+
+      {% if api_keys %}
+        <div class="keys-list">
+          {% for key in api_keys %}
+            {% if key.ativo %}
+            <div class="key-item">
+              <div class="key-meta">
+                <div class="key-nome">{{ key.nome }}</div>
+                <div class="key-prefix">{{ key.key_prefix }}••••••••••••••••••••</div>
+                <div class="key-stats">
+                  {{ key.total_requisicoes }} requisições
+                  {% if key.ultima_uso %} · último uso {{ key.ultima_uso.strftime('%d/%m/%Y') }}{% endif %}
+                  · criada {{ key.criado_em.strftime('%d/%m/%Y') }}
+                </div>
+              </div>
+              <form method="POST" action="{{ url_for('account.revogar_api_key', key_id=key.id) }}">
+                <button type="submit" class="btn btn-danger"
+                  onclick="return confirm('Revogar esta API key?')">Revogar</button>
+              </form>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty-state">Nenhuma API key criada.</p>
+      {% endif %}
+
+      <hr class="divider">
+      <div class="section-title" style="margin-bottom: 0.75rem;">Nova API key</div>
+      <form method="POST" action="{{ url_for('account.criar_api_key') }}" class="new-key-form">
+        <div class="campo">
+          <label>Nome / descrição</label>
+          <input type="text" name="nome" placeholder="ex: integração dashboard" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Gerar key</button>
+      </form>
+
+    {% else %}
+      <p class="empty-state">
+        O acesso à API está disponível nos planos <strong>Pro</strong> e <strong>Enterprise</strong>.
+        <a href="{{ url_for('billing.planos') }}" class="link-upgrade">Fazer upgrade →</a>
+      </p>
+    {% endif %}
+  </div>
+
+</div>
+</body>
+</html>

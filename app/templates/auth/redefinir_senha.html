@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova Senha — Monitor Financeiro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0d0f14;--surface:#13161e;--surface2:#1a1e29;--border:#252a38;--text:#e8eaf0;--muted:#7c8499;--accent:#4f9cf9;--neg:#f87171; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem;width:100%;max-width:400px;}
+  h1{font-family:'DM Serif Display',serif;font-size:1.7rem;font-weight:400;margin-bottom:0.35rem;}
+  .subtitle{font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);margin-bottom:2rem;}
+  .campo{display:flex;flex-direction:column;gap:0.35rem;margin-bottom:1.1rem;}
+  label{font-family:'DM Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);}
+  input[type="password"]{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.6rem 0.85rem;border-radius:8px;font-size:0.9rem;font-family:'DM Sans',sans-serif;outline:none;}
+  input:focus{border-color:var(--accent);}
+  .btn-submit{width:100%;padding:0.7rem;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:0.9rem;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;}
+  .btn-submit:hover{background:#3a87e8;}
+  .flash{border-radius:8px;padding:0.65rem 0.9rem;margin-bottom:1.25rem;font-size:0.82rem;}
+  .flash.error{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:var(--neg);}
+  .flash.info{background:rgba(79,156,249,0.1);border:1px solid rgba(79,156,249,0.3);color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Monitor Financeiro</h1>
+  <p class="subtitle">Definir nova senha</p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="POST" action="{{ url_for('auth.redefinir_senha_post', token=token) }}">
+    <div class="campo">
+      <label>Nova senha</label>
+      <input type="password" name="senha" required minlength="8" autofocus>
+    </div>
+    <div class="campo">
+      <label>Confirmar nova senha</label>
+      <input type="password" name="confirmacao" required>
+    </div>
+    <button type="submit" class="btn-submit">Redefinir senha</button>
+  </form>
+</div>
+</body>
+</html>

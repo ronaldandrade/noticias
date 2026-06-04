@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Monitor Financeiro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14; --surface: #13161e; --surface2: #1a1e29;
+    --border: #252a38; --text: #e8eaf0; --muted: #7c8499;
+    --accent: #4f9cf9; --neg: #f87171; --pos: #34d399; --gold: #fbbf24;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 300; min-height: 100vh; }
+  header { border-bottom: 1px solid var(--border); padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 1.4rem; font-weight: 400; }
+  .nav-link { color: var(--accent); text-decoration: none; font-size: 0.85rem; font-family: 'DM Mono', monospace; }
+  .container { max-width: 1100px; margin: 2rem auto; padding: 0 2rem; }
+  .page-title { font-family: 'DM Serif Display', serif; font-size: 1.8rem; font-weight: 400; margin-bottom: 2rem; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+  .stat-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.4rem; }
+  .stat-value { font-size: 1.75rem; font-weight: 500; }
+  .section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.75rem; margin-bottom: 1.5rem; }
+  .section-title { font-family: 'DM Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 1rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th { text-align: left; font-family: 'DM Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  td { padding: 0.6rem 0.75rem; border-bottom: 1px solid rgba(37,42,56,0.5); }
+  tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 12px; font-family: 'DM Mono', monospace; font-size: 0.65rem; }
+  .badge-admin { background: rgba(248,113,113,0.15); color: var(--neg); }
+  .badge-user { background: rgba(124,132,153,0.15); color: var(--muted); }
+  .plans-row { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+  .plan-stat { text-align: center; }
+  .plan-stat .count { font-size: 1.5rem; font-weight: 500; }
+  .plan-stat .name { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Monitor Financeiro <span style="color:var(--neg);font-size:0.8rem;font-family:'DM Mono',monospace;margin-left:0.5rem;">ADMIN</span></h1>
+  <a href="{{ url_for('main.index') }}" class="nav-link">← App</a>
+</header>
+
+<div class="container">
+  <div class="page-title">Painel de Administração</div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Usuários</div>
+      <div class="stat-value">{{ total_users }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Assinaturas ativas</div>
+      <div class="stat-value" style="color:var(--pos)">{{ subs_ativas }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Notícias</div>
+      <div class="stat-value">{{ total_noticias }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Ativos monitorados</div>
+      <div class="stat-value">{{ total_ativos }}</div>
+    </div>
+  </div>
+
+  <!-- Assinaturas por plano -->
+  <div class="section">
+    <div class="section-title">Distribuição de Planos</div>
+    <div class="plans-row">
+      {% for item in subs_por_plano %}
+        <div class="plan-stat">
+          <div class="count">{{ item.total }}</div>
+          <div class="name">{{ item.plano }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Usuários recentes -->
+  <div class="section">
+    <div class="section-title">Usuários Recentes (últimos 20)</div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Role</th>
+          <th>Cadastro</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users_recentes %}
+        <tr>
+          <td style="font-family:'DM Mono',monospace;color:var(--muted);">{{ user.id }}</td>
+          <td>{{ user.nome or '—' }}</td>
+          <td>{{ user.email }}</td>
+          <td><span class="badge badge-{{ user.role }}">{{ user.role }}</span></td>
+          <td style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted);">
+            {{ user.criado_em.strftime('%d/%m/%Y') }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</body>
+</html>

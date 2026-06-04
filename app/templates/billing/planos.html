@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planos — Monitor Financeiro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14; --surface: #13161e; --surface2: #1a1e29;
+    --border: #252a38; --text: #e8eaf0; --muted: #7c8499;
+    --accent: #4f9cf9; --neg: #f87171; --pos: #34d399; --gold: #fbbf24;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 300; min-height: 100vh; }
+  header { border-bottom: 1px solid var(--border); padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 1.4rem; font-weight: 400; }
+  .nav-link { color: var(--accent); text-decoration: none; font-size: 0.85rem; font-family: 'DM Mono', monospace; }
+  .hero { text-align: center; padding: 4rem 2rem 2rem; }
+  .hero h2 { font-family: 'DM Serif Display', serif; font-size: 2.4rem; font-weight: 400; margin-bottom: 0.75rem; }
+  .hero p { color: var(--muted); font-size: 1rem; max-width: 520px; margin: 0 auto; }
+  .plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; max-width: 980px; margin: 3rem auto; padding: 0 2rem; }
+  .plan-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; display: flex; flex-direction: column; gap: 1.25rem; transition: border-color 0.2s; }
+  .plan-card.atual { border-color: var(--accent); }
+  .plan-card.popular { border-color: var(--gold); }
+  .plan-badge { font-family: 'DM Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; padding: 0.25rem 0.6rem; border-radius: 20px; display: inline-block; width: fit-content; }
+  .badge-free { background: rgba(124,132,153,0.15); color: var(--muted); }
+  .badge-pro { background: rgba(251,191,36,0.15); color: var(--gold); }
+  .badge-enterprise { background: rgba(79,156,249,0.15); color: var(--accent); }
+  .badge-atual { background: rgba(52,211,153,0.15); color: var(--pos); }
+  .plan-nome { font-family: 'DM Serif Display', serif; font-size: 1.5rem; font-weight: 400; }
+  .plan-preco { font-size: 2rem; font-weight: 500; }
+  .plan-preco span { font-size: 0.85rem; color: var(--muted); font-weight: 300; }
+  .plan-features { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; flex: 1; }
+  .plan-features li { font-size: 0.88rem; display: flex; align-items: center; gap: 0.5rem; }
+  .plan-features li::before { content: "✓"; color: var(--pos); font-size: 0.8rem; flex-shrink: 0; }
+  .plan-features li.no::before { content: "✗"; color: var(--neg); }
+  .plan-features li.no { color: var(--muted); }
+  .btn-plan { padding: 0.7rem 1.25rem; border-radius: 8px; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; border: none; text-align: center; text-decoration: none; display: block; transition: opacity 0.15s; }
+  .btn-plan:hover { opacity: 0.85; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-gold { background: var(--gold); color: #0d0f14; }
+  .btn-disabled { background: var(--surface2); color: var(--muted); cursor: default; }
+  .flash { max-width: 980px; margin: 1rem auto 0; padding: 0 2rem; }
+  .flash-msg { border-radius: 8px; padding: 0.7rem 1rem; font-size: 0.85rem; }
+  .flash-msg.info { background: rgba(79,156,249,0.1); border: 1px solid rgba(79,156,249,0.3); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Monitor Financeiro</h1>
+  {% if current_user.is_authenticated %}
+    <a href="{{ url_for('main.index') }}" class="nav-link">← Voltar</a>
+  {% else %}
+    <a href="{{ url_for('auth.login') }}" class="nav-link">Entrar</a>
+  {% endif %}
+</header>
+
+<div class="hero">
+  <h2>Escolha seu plano</h2>
+  <p>Acesso a dados de sentimento, correlações e API para mercado financeiro brasileiro.</p>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash">
+      {% for category, message in messages %}
+        <div class="flash-msg {{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="plans-grid">
+  {% for plan in plans %}
+  <div class="plan-card {% if plano_atual and plano_atual.nome == plan.nome %}atual{% elif plan.nome == 'pro' %}popular{% endif %}">
+
+    <div>
+      {% if plano_atual and plano_atual.nome == plan.nome %}
+        <span class="plan-badge badge-atual">Plano atual</span>
+      {% elif plan.nome == 'pro' %}
+        <span class="plan-badge badge-pro">Popular</span>
+      {% elif plan.nome == 'enterprise' %}
+        <span class="plan-badge badge-enterprise">Enterprise</span>
+      {% else %}
+        <span class="plan-badge badge-free">Grátis</span>
+      {% endif %}
+    </div>
+
+    <div class="plan-nome">{{ plan.display_nome }}</div>
+
+    <div class="plan-preco">
+      {% if plan.preco_mensal == 0 %}
+        R$ 0 <span>/ mês</span>
+      {% else %}
+        R$ {{ "%.2f"|format(plan.preco_mensal)|replace('.', ',') }} <span>/ mês</span>
+      {% endif %}
+    </div>
+
+    <ul class="plan-features">
+      {% if plan.max_ativos == -1 %}
+        <li>Todos os ativos monitorados</li>
+      {% else %}
+        <li>Até {{ plan.max_ativos }} ativos</li>
+      {% endif %}
+      <li>{{ plan.historico_dias }} dias de histórico</li>
+      <li>Dashboard e filtros</li>
+      {% if plan.acesso_relatorio %}
+        <li>Relatórios completos</li>
+      {% else %}
+        <li class="no">Relatórios completos</li>
+      {% endif %}
+      {% if plan.acesso_termometro %}
+        <li>Termômetro de sentimento</li>
+      {% else %}
+        <li class="no">Termômetro de sentimento</li>
+      {% endif %}
+      {% if plan.acesso_api %}
+        <li>Acesso à API REST</li>
+      {% else %}
+        <li class="no">Acesso à API REST</li>
+      {% endif %}
+    </ul>
+
+    {% if not current_user.is_authenticated %}
+      <a href="{{ url_for('auth.registro') }}" class="btn-plan btn-primary">Criar conta grátis</a>
+    {% elif plano_atual and plano_atual.nome == plan.nome %}
+      <span class="btn-plan btn-disabled">Plano ativo</span>
+    {% elif plan.nome == 'free' %}
+      <span class="btn-plan btn-disabled">Downgrade indisponível</span>
+    {% else %}
+      <form method="POST" action="{{ url_for('billing.checkout', plan_nome=plan.nome) }}">
+        <button type="submit" class="btn-plan {% if plan.nome == 'enterprise' %}btn-primary{% else %}btn-gold{% endif %}">
+          Assinar {{ plan.display_nome }}
+        </button>
+      </form>
+    {% endif %}
+
+  </div>
+  {% endfor %}
+</div>
+
+</body>
+</html>

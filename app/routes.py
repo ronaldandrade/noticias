@@ -1,15 +1,13 @@
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify, flash
 from flask_login import login_required, current_user
-from .models import Noticia, Ativo
+from .models import Noticia, Ativo, User, Subscription, Plan
 from .services.sentimento_service import aplicar_scores_em_lote
-from .services.cotacao_service import (
-    buscar_cotacoes_todos_ativos,
-    calcular_correlacao_todos,
-)
+from .services.cotacao_service import buscar_cotacoes_todos_ativos, calcular_correlacao_todos
 from .services.relatorio_service import gerar_dados_relatorio
 from .services.termometro_service import gerar_termometro
 from .services.ner_service import aplicar_ner_em_lote
 from .scraper import buscar_noticias
+from .decorators import require_admin, require_plan
 from . import db
 from .repository import filtrar_noticias
 import nltk
@@ -21,9 +19,9 @@ import os
 
 nltk.data.path.append(os.path.join(os.path.dirname(__file__), '../nltk_data'))
 
-admin_bp    = Blueprint("admin",    __name__, url_prefix="/admin")
-bp          = Blueprint('main',     __name__)
-relatorio_bp = Blueprint("relatorio", __name__, url_prefix="/relatorio")
+admin_bp      = Blueprint("admin",      __name__, url_prefix="/admin")
+bp            = Blueprint('main',       __name__)
+relatorio_bp  = Blueprint("relatorio",  __name__, url_prefix="/relatorio")
 termometro_bp = Blueprint("termometro", __name__, url_prefix="/termometro")
 
 
@@ -32,59 +30,53 @@ termometro_bp = Blueprint("termometro", __name__, url_prefix="/termometro")
 @bp.route('/', methods=['GET'])
 @login_required
 def index():
- 
-    data_filtro    = request.args.get('data',    None)
-    assunto_filtro = request.args.get('assunto', None)
-    periodo        = request.args.get('periodo', None)
+    data_filtro      = request.args.get('data',      None)
+    assunto_filtro   = request.args.get('assunto',   None)
+    periodo          = request.args.get('periodo',   None)
     categoria_filtro = request.args.get('categoria', None)
-    page           = request.args.get('page', default=1, type=int)
- 
+    page             = request.args.get('page', default=1, type=int)
+
     noticias_paginadas = filtrar_noticias(
         data_filtro, assunto_filtro, periodo, page=page, per_page=15
     )
- 
-    # Pré-carrega relação ativo para evitar N+1 queries no template
-    from sqlalchemy.orm import joinedload
-    ids_pagina = [n.id for n in noticias_paginadas.items]
- 
-    # ── Visão geral (sobre todo o banco, não só a página atual) ──────────────
-    total_noticias  = Noticia.query.count()
-    total_paginas   = noticias_paginadas.pages
- 
+
+    total_noticias = Noticia.query.count()
+
     scores = db.session.query(Noticia.score_sentimento)\
                .filter(Noticia.score_sentimento.isnot(None)).all()
     scores_list = [r[0] for r in scores]
- 
+
     total_positivas = sum(1 for s in scores_list if s >  0.05)
     total_negativas = sum(1 for s in scores_list if s < -0.05)
     total_neutras   = len(scores_list) - total_positivas - total_negativas
     score_medio     = round(sum(scores_list) / len(scores_list), 3) if scores_list else 0.0
     total_com_ativo = Noticia.query.filter(Noticia.ativo_id.isnot(None)).count()
- 
-    # Adiciona relação ativo em cada notícia da página para o template
+
     ativos_map = {a.id: a for a in Ativo.query.all()}
     for n in noticias_paginadas.items:
         n.ativo = ativos_map.get(n.ativo_id)
- 
+
     return render_template(
         'index.html',
         noticias=noticias_paginadas.items,
         pagination=noticias_paginadas,
         total_noticias=total_noticias,
-        total_paginas=total_paginas,
+        total_paginas=noticias_paginadas.pages,
         total_positivas=total_positivas,
         total_negativas=total_negativas,
         total_neutras=total_neutras,
         score_medio=score_medio,
         total_com_ativo=total_com_ativo,
     )
+
+
 @bp.route('/atualizar')
 @login_required
 def atualizar():
     import threading
     from flask import current_app
 
-    app = current_app._get_current_object() 
+    app = current_app._get_current_object()
 
     def rodar_em_background():
         with app.app_context():
@@ -97,9 +89,9 @@ def atualizar():
             except Exception as e:
                 app.logger.error(f"Erro no pipeline: {e}")
 
-    thread = threading.Thread(target=rodar_em_background, daemon=True)
-    thread.start()
+    threading.Thread(target=rodar_em_background, daemon=True).start()
     return redirect(url_for('main.index'))
+
 
 @bp.route('/noticia/<int:id>')
 @login_required
@@ -116,8 +108,6 @@ def dashboard():
     periodo        = request.args.get('periodo', None)
 
     noticias_paginadas = filtrar_noticias(data_filtro, assunto_filtro, periodo)
-
-    # Garante que temos uma lista mesmo que o resultado venha paginado
     itens = noticias_paginadas.items if hasattr(noticias_paginadas, 'items') else list(noticias_paginadas)
 
     titulos    = [n.titulo.lower() for n in itens]
@@ -130,10 +120,9 @@ def dashboard():
         trigramas = [' '.join(t) for t in trigrams(tokens)]
         palavras.extend(trigramas)
 
-    contagem    = Counter(palavras).most_common(5)
+    contagem     = Counter(palavras).most_common(5)
     top_assuntos = [{'assunto': a, 'frequencia': f} for a, f in contagem]
 
-    # Passa scores por ativo para o dashboard poder exibir
     ativos = Ativo.query.all()
     scores_por_ativo = []
     for ativo in ativos:
@@ -156,9 +145,32 @@ def dashboard():
         periodo=periodo,
     )
 
+
+# ── Relatório (plano Pro+) ────────────────────────────────────────────────────
+
+@relatorio_bp.get("/")
+@login_required
+@require_plan("pro", "enterprise")
+def relatorio():
+    dias  = int(request.args.get("dias", 90))
+    dados = gerar_dados_relatorio(dias=dias)
+    return render_template("relatorio.html", **dados)
+
+
+# ── Termômetro (plano Pro+) ───────────────────────────────────────────────────
+
+@termometro_bp.get("/")
+@login_required
+@require_plan("pro", "enterprise")
+def termometro():
+    dados = gerar_termometro()
+    return render_template("termometro.html", **dados)
+
+
+# ── Admin: cron (autenticado por CRON_SECRET) ─────────────────────────────────
+
 @admin_bp.post("/cron/atualizar")
 def cron_atualizar():
-    """Chamado pelo GitHub Actions automaticamente."""
     secret = request.headers.get("X-Cron-Secret", "")
     if secret != os.environ.get("CRON_SECRET", ""):
         return jsonify({"erro": "não autorizado"}), 401
@@ -171,33 +183,39 @@ def cron_atualizar():
     return jsonify({"status": "ok", "scores_atualizados": n})
 
 
-# ── Relatório ─────────────────────────────────────────────────────────────────
+# ── Admin: painel (role admin) ────────────────────────────────────────────────
 
-@relatorio_bp.get("/")
+@admin_bp.get("/")
 @login_required
-def relatorio():
-    dias  = int(request.args.get("dias", 90))
-    dados = gerar_dados_relatorio(dias=dias)
-    return render_template("relatorio.html", **dados)
+@require_admin
+def painel():
+    total_users   = User.query.count()
+    total_noticias = Noticia.query.count()
+    total_ativos  = Ativo.query.count()
+    users_recentes = User.query.order_by(User.criado_em.desc()).limit(20).all()
+    subs_ativas   = Subscription.query.filter_by(status="active").count()
+    planos        = Plan.query.order_by(Plan.preco_mensal).all()
 
-# ── Termômetro ─────────────────────────────────────────────────────────────────
+    subs_por_plano = []
+    for p in planos:
+        count = Subscription.query.filter_by(plan_id=p.id, status="active").count()
+        subs_por_plano.append({"plano": p.display_nome, "total": count})
 
-@termometro_bp.get("/")
-@login_required
-def termometro():
-    dados = gerar_termometro()
-    return render_template("termometro.html", **dados)
+    return render_template(
+        "admin/painel.html",
+        total_users=total_users,
+        total_noticias=total_noticias,
+        total_ativos=total_ativos,
+        users_recentes=users_recentes,
+        subs_ativas=subs_ativas,
+        subs_por_plano=subs_por_plano,
+    )
 
-# ── Admin / API ───────────────────────────────────────────────────────────────
 
 @admin_bp.post("/scoring")
+@login_required
+@require_admin
 def rodar_scoring():
-    """
-    Pipeline completo via POST:
-      1. Busca cotações
-      2. Aplica scores nas notícias ainda sem score
-      3. Recalcula correlações
-    """
     buscar_cotacoes_todos_ativos(dias=90)
     n_noticias  = aplicar_scores_em_lote(limite=1000)
     correlacoes = calcular_correlacao_todos(dias=90)
@@ -215,19 +233,13 @@ def rodar_scoring():
             "periodo":    f"{c.data_inicio} → {c.data_fim}",
         })
 
-    return jsonify({
-        "noticias_atualizadas": n_noticias,
-        "correlacoes": resultado,
-    })
+    return jsonify({"noticias_atualizadas": n_noticias, "correlacoes": resultado})
 
 
 @admin_bp.post("/atualizar-completo")
+@login_required
+@require_admin
 def atualizar_completo():
-    """
-    Versão completa do /atualizar:
-    raspa notícias + cotações + correlações em uma chamada só.
-    Útil para chamar via cron ou APScheduler.
-    """
     buscar_noticias()
     buscar_cotacoes_todos_ativos(dias=90)
     n_noticias  = aplicar_scores_em_lote(limite=500)
@@ -241,8 +253,9 @@ def atualizar_completo():
 
 
 @admin_bp.get("/scores")
+@login_required
+@require_admin
 def listar_scores():
-    """Últimas 50 notícias com score — útil para debug."""
     noticias = (
         Noticia.query
         .filter(Noticia.score_sentimento.isnot(None))
@@ -251,26 +264,22 @@ def listar_scores():
         .all()
     )
     return jsonify([
-        {
-            "titulo":   n.titulo,
-            "score":    n.score_sentimento,
-            "ativo_id": n.ativo_id,
-            "data":     n.data_publicacao.isoformat(),
-        }
+        {"titulo": n.titulo, "score": n.score_sentimento, "ativo_id": n.ativo_id, "data": n.data_publicacao.isoformat()}
         for n in noticias
     ])
 
 
 @admin_bp.get("/status")
+@login_required
+@require_admin
 def status():
-    """Health check rápido do pipeline — retorna contagens do banco."""
     from .models import Cotacao, Correlacao
-
     return jsonify({
-        "noticias":        Noticia.query.count(),
-        "com_score":       Noticia.query.filter(Noticia.score_sentimento.isnot(None)).count(),
-        "sem_score":       Noticia.query.filter(Noticia.score_sentimento.is_(None)).count(),
-        "cotacoes":        Cotacao.query.count(),
-        "correlacoes":     Correlacao.query.count(),
-        "ativos":          Ativo.query.count(),
+        "noticias":    Noticia.query.count(),
+        "com_score":   Noticia.query.filter(Noticia.score_sentimento.isnot(None)).count(),
+        "sem_score":   Noticia.query.filter(Noticia.score_sentimento.is_(None)).count(),
+        "cotacoes":    Cotacao.query.count(),
+        "correlacoes": Correlacao.query.count(),
+        "ativos":      Ativo.query.count(),
+        "users":       User.query.count(),
     })
