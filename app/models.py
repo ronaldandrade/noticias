@@ -236,3 +236,22 @@ class Correlacao(db.Model):
 
     def __repr__(self):
         return f"<Correlacao ativo={self.ativo_id} pearson={self.pearson:.3f}>"
+
+
+# ── Ativos favoritos do usuário ───────────────────────────────────────────────
+
+class UserFavoriteAsset(db.Model):
+    __tablename__ = "user_favorite_asset"
+
+    id       = db.Column(db.Integer, primary_key=True)
+    user_id  = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    symbol   = db.Column(db.String(20),  nullable=False)
+    nome     = db.Column(db.String(100), nullable=True)
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "symbol", name="uq_user_favorite_symbol"),
+    )
+
+    def __repr__(self):
+        return f"<UserFavoriteAsset user={self.user_id} symbol={self.symbol}>"

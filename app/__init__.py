@@ -44,6 +44,7 @@ def create_app():
     from .billing import billing_bp
     from .account import account_bp
     from .api import api_bp
+    from .ativos_personalizados import ativos_bp
 
     app.register_blueprint(routes_bp)
     app.register_blueprint(admin_bp)
@@ -53,6 +54,7 @@ def create_app():
     app.register_blueprint(billing_bp)
     app.register_blueprint(account_bp)
     app.register_blueprint(api_bp)
+    app.register_blueprint(ativos_bp)
 
     from .cli import pipeline
     app.cli.add_command(pipeline)

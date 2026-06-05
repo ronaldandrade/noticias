@@ -3,7 +3,7 @@ services:
     name: monitor-financeiro
     runtime: python
     buildCommand: pip install -r requirements.txt && python -m spacy download pt_core_news_sm && python -c "import nltk; nltk.download('stopwords'); nltk.download('punkt'); nltk.download('punkt_tab')"
-    startCommand: gunicorn -c gunicorn.conf.py run:app
+    startCommand: flask db upgrade && gunicorn -c gunicorn.conf.py run:app
     envVars:
       - key: DATABASE_URL
         sync: false

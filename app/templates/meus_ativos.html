@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meus Ativos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:       #0d0f14;
+    --surface:  #13161e;
+    --surface2: #1a1e29;
+    --border:   #252a38;
+    --text:     #e8eaf0;
+    --muted:    #7c8499;
+    --accent:   #4f9cf9;
+    --pos:      #34d399;
+    --neg:      #f87171;
+    --neu:      #a78bfa;
+    --gold:     #fbbf24;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 300; line-height: 1.6; min-height: 100vh; }
+
+  /* ── Header ── */
+  header { border-bottom: 1px solid var(--border); padding: 2rem 3rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+  .header-left h1 { font-family: 'DM Serif Display', serif; font-size: 1.9rem; font-weight: 400; letter-spacing: -0.02em; }
+  .header-left p  { color: var(--muted); font-size: 0.78rem; margin-top: 0.3rem; font-family: 'DM Mono', monospace; }
+  .header-nav { display: flex; gap: 0.5rem; }
+  .btn { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.45rem 1rem; border-radius: 7px; font-size: 0.8rem; font-family: 'DM Mono', monospace; text-decoration: none; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); transition: all 0.15s; cursor: pointer; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { background: #3b87e8; }
+
+  /* ── Main ── */
+  main { max-width: 1400px; margin: 0 auto; padding: 2rem 3rem 4rem; display: flex; flex-direction: column; gap: 2.5rem; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem; }
+  .section-title { font-family: 'DM Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); }
+  .section-badge { font-family: 'DM Mono', monospace; font-size: 0.68rem; background: var(--surface2); border: 1px solid var(--border); padding: 0.15rem 0.6rem; border-radius: 20px; color: var(--muted); }
+
+  /* ── Grid de cards ── */
+  .assets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+
+  /* ── Card de ativo ── */
+  .asset-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; transition: border-color 0.15s, transform 0.1s; position: relative; }
+  .asset-card:hover { border-color: rgba(79,156,249,0.35); transform: translateY(-1px); }
+  .asset-card.loading { opacity: 0.6; }
+
+  .card-top-bar { height: 3px; width: 100%; }
+  .card-top-bar.pos { background: var(--pos); }
+  .card-top-bar.neg { background: var(--neg); }
+  .card-top-bar.neu { background: var(--neu); }
+  .card-top-bar.loading-bar { background: linear-gradient(90deg, var(--border) 25%, var(--surface2) 50%, var(--border) 75%); background-size: 200%; animation: shimmer 1.5s infinite; }
+
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  .card-body { padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.75rem; flex: 1; }
+
+  /* Título do card */
+  .card-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+  .card-title-left { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+  .asset-symbol { font-family: 'DM Mono', monospace; font-size: 0.9rem; font-weight: 500; color: var(--accent); }
+  .asset-name   { font-size: 0.8rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+  .asset-cat    { font-size: 0.63rem; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); padding: 0.1rem 0.4rem; border-radius: 4px; font-family: 'DM Mono', monospace; align-self: flex-start; margin-top: 0.2rem; }
+  .btn-remove   { background: none; border: none; color: var(--muted); font-size: 1rem; cursor: pointer; padding: 0.1rem 0.3rem; border-radius: 4px; line-height: 1; transition: color 0.1s, background 0.1s; flex-shrink: 0; }
+  .btn-remove:hover { color: var(--neg); background: rgba(248,113,113,0.1); }
+
+  /* Preço */
+  .card-price { display: flex; align-items: baseline; gap: 0.6rem; }
+  .price-value { font-family: 'DM Serif Display', serif; font-size: 1.6rem; line-height: 1; color: var(--text); }
+  .price-var   { font-family: 'DM Mono', monospace; font-size: 0.78rem; font-weight: 500; }
+  .price-var.pos { color: var(--pos); }
+  .price-var.neg { color: var(--neg); }
+  .price-var.neu { color: var(--muted); }
+  .price-skeleton { height: 1.6rem; background: var(--surface2); border-radius: 4px; width: 120px; animation: shimmer 1.5s infinite; background-size: 200%; }
+
+  /* Sparkline */
+  .sparkline-wrap { height: 55px; position: relative; }
+  .sparkline-wrap canvas { width: 100% !important; height: 55px !important; }
+
+  /* Métricas */
+  .card-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+  .metric { display: flex; flex-direction: column; gap: 0.05rem; }
+  .metric-label { font-size: 0.62rem; color: var(--muted); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.05em; }
+  .metric-value { font-family: 'DM Mono', monospace; font-size: 0.78rem; font-weight: 500; }
+  .metric-value.pos { color: var(--pos); }
+  .metric-value.neg { color: var(--neg); }
+  .metric-value.neu { color: var(--muted); }
+  .metric-skeleton { height: 0.78rem; background: var(--surface2); border-radius: 3px; width: 60px; animation: shimmer 1.5s infinite; background-size: 200%; }
+
+  hr.card-divider { border: none; border-top: 1px solid var(--border); }
+
+  /* Ações do card */
+  .card-actions { display: flex; gap: 0.4rem; padding: 0.65rem 1.1rem; border-top: 1px solid var(--border); background: var(--surface2); }
+  .btn-action { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.28rem 0.65rem; border-radius: 6px; font-size: 0.7rem; font-family: 'DM Mono', monospace; text-decoration: none; border: 1px solid var(--border); background: var(--surface); color: var(--muted); transition: all 0.12s; cursor: pointer; }
+  .btn-action:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Card "Adicionar" ── */
+  .add-card { border: 2px dashed var(--border); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; padding: 2rem 1rem; cursor: pointer; transition: border-color 0.15s, background 0.15s; min-height: 180px; background: transparent; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.8rem; }
+  .add-card:hover { border-color: var(--accent); color: var(--accent); background: rgba(79,156,249,0.04); }
+  .add-card .add-icon { font-size: 2rem; line-height: 1; }
+  .add-card.locked { cursor: default; border-style: solid; }
+  .add-card.locked:hover { border-color: var(--border); color: var(--muted); background: transparent; }
+
+  /* ── Banner login ── */
+  .login-banner { background: rgba(79,156,249,0.07); border: 1px solid rgba(79,156,249,0.25); border-radius: 10px; padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .login-banner p { font-size: 0.88rem; color: var(--muted); }
+  .login-banner strong { color: var(--text); }
+
+  /* ── Modais ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 520px; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column; transform: translateY(8px); transition: transform 0.2s; }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.5rem; border-bottom: 1px solid var(--border); }
+  .modal-header h2 { font-family: 'DM Serif Display', serif; font-size: 1.2rem; font-weight: 400; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 1.3rem; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 1.25rem 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; flex: 1; }
+  .modal-footer { padding: 0.75rem 1.5rem; border-top: 1px solid var(--border); font-size: 0.72rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  /* Modal buscar */
+  .search-input { width: 100%; padding: 0.65rem 1rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 0.9rem; font-family: 'DM Mono', monospace; outline: none; transition: border-color 0.15s; }
+  .search-input:focus { border-color: var(--accent); }
+  .search-results { display: flex; flex-direction: column; gap: 0.3rem; }
+  .search-result-item { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.85rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; transition: border-color 0.12s; }
+  .search-result-item:hover { border-color: rgba(79,156,249,0.4); }
+  .result-info { display: flex; flex-direction: column; gap: 0.05rem; }
+  .result-symbol { font-family: 'DM Mono', monospace; font-size: 0.82rem; font-weight: 500; color: var(--accent); }
+  .result-name   { font-size: 0.75rem; color: var(--muted); }
+  .btn-add-result { padding: 0.25rem 0.7rem; font-size: 0.72rem; }
+  .search-empty { text-align: center; color: var(--muted); font-size: 0.82rem; padding: 1rem 0; font-family: 'DM Mono', monospace; }
+  .plan-limit-bar { display: flex; align-items: center; gap: 0.5rem; font-size: 0.72rem; font-family: 'DM Mono', monospace; color: var(--muted); }
+  .limit-fill { flex: 1; height: 4px; background: var(--border); border-radius: 2px; }
+  .limit-used { height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.3s; }
+  .limit-used.full { background: var(--neg); }
+
+  /* Modal notícias */
+  .news-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .news-item  { display: flex; align-items: flex-start; gap: 0.65rem; padding: 0.7rem 0.85rem; background: var(--surface2); border-radius: 8px; border-left: 2px solid var(--border); }
+  .news-item.positivo { border-left-color: var(--pos); }
+  .news-item.negativo { border-left-color: var(--neg); }
+  .news-score { font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 0.15rem 0.4rem; border-radius: 3px; flex-shrink: 0; margin-top: 0.1rem; font-weight: 500; }
+  .news-score.positivo { background: rgba(52,211,153,0.12); color: var(--pos); }
+  .news-score.negativo { background: rgba(248,113,113,0.12); color: var(--neg); }
+  .news-score.neutro   { background: var(--surface); color: var(--muted); }
+  .news-content a { font-size: 0.78rem; color: var(--text); text-decoration: none; display: block; line-height: 1.35; }
+  .news-content a:hover { color: var(--accent); }
+  .news-date { font-size: 0.65rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 0.2rem; }
+
+  /* Modal detalhe */
+  .detail-chart-wrap { position: relative; height: 200px; }
+  .detail-tabs { display: flex; gap: 0.4rem; margin-bottom: 0.75rem; }
+  .tab-btn { padding: 0.25rem 0.7rem; border-radius: 5px; font-size: 0.72rem; font-family: 'DM Mono', monospace; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .detail-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+  .detail-metric { background: var(--surface2); border-radius: 8px; padding: 0.65rem 0.85rem; }
+  .detail-metric .metric-label { font-size: 0.62rem; color: var(--muted); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.05em; }
+  .detail-metric .metric-value { font-family: 'DM Serif Display', serif; font-size: 1.1rem; margin-top: 0.1rem; }
+
+  /* Footer */
+  footer { border-top: 1px solid var(--border); padding: 1.25rem 3rem; text-align: center; font-size: 0.72rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  @media (max-width: 768px) {
+    header, main { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .assets-grid { grid-template-columns: 1fr; }
+    footer { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .detail-metrics { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Meus Ativos</h1>
+    <p>Watchlist personalizada · Monitor Financeiro BR</p>
+  </div>
+  <nav class="header-nav">
+    <a href="/" class="btn">Notícias</a>
+    <a href="/relatorio" class="btn">Relatório</a>
+    <a href="/termometro" class="btn">Termômetro</a>
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('billing.planos') }}" class="btn">Planos</a>
+    {% else %}
+    <a href="{{ url_for('auth.login') }}" class="btn primary">Entrar</a>
+    {% endif %}
+  </nav>
+</header>
+
+<main>
+
+  <!-- ── Ativos Padrão ── -->
+  <section>
+    <div class="section-header">
+      <span class="section-title">Ativos Padrão</span>
+      <span class="section-badge">{{ default_assets | length }} ativos · não removíveis</span>
+    </div>
+    <div class="assets-grid" id="grid-default">
+      {% for a in default_assets %}
+      <div class="asset-card loading" id="card-{{ a.symbol | replace('^','_') | replace('=','_') | replace('-','_') }}" data-symbol="{{ a.symbol }}">
+        <div class="card-top-bar loading-bar"></div>
+        <div class="card-body">
+          <div class="card-title">
+            <div class="card-title-left">
+              <span class="asset-symbol">{{ a.symbol }}</span>
+              <span class="asset-name">{{ a.nome }}</span>
+              <span class="asset-cat">{{ a.categoria }}</span>
+            </div>
+          </div>
+          <div class="card-price">
+            <span class="price-skeleton"></span>
+          </div>
+          <div class="sparkline-wrap">
+            <canvas id="spark-{{ a.symbol | replace('^','_') | replace('=','_') | replace('-','_') }}"></canvas>
+          </div>
+          <div class="card-metrics">
+            <div class="metric"><span class="metric-label">Sent. 7d</span><span class="metric-skeleton"></span></div>
+            <div class="metric"><span class="metric-label">Sent. 30d</span><span class="metric-skeleton"></span></div>
+            <div class="metric"><span class="metric-label">Volume</span><span class="metric-skeleton"></span></div>
+            <div class="metric"><span class="metric-label">Corr. IBOV</span><span class="metric-skeleton"></span></div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-action btn-noticias" onclick="openNoticias('{{ a.symbol }}', '{{ a.nome }}')">📰 Notícias</button>
+          <button class="btn-action btn-detalhe" onclick="openDetalhe('{{ a.symbol }}', '{{ a.nome }}')">📊 Detalhe</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- ── Meus Ativos ── -->
+  <section>
+    <div class="section-header">
+      <span class="section-title">Meus Ativos</span>
+      {% if current_user.is_authenticated %}
+        <span class="section-badge" id="badge-count">
+          {{ user_count }}/{% if max_ativos == -1 %}∞{% else %}{{ max_ativos }}{% endif %} ativos
+        </span>
+      {% endif %}
+    </div>
+
+    {% if not current_user.is_authenticated %}
+    <div class="login-banner">
+      <p><strong>Crie uma conta</strong> para adicionar e acompanhar seus ativos favoritos da B3.</p>
+      <a href="{{ url_for('auth.login') }}" class="btn primary">Entrar / Cadastrar</a>
+    </div>
+    {% else %}
+    <div class="assets-grid" id="grid-user">
+      {% for a in user_assets %}
+      <div class="asset-card loading" id="card-{{ a.symbol | replace('^','_') | replace('=','_') | replace('-','_') }}" data-symbol="{{ a.symbol }}">
+        <div class="card-top-bar loading-bar"></div>
+        <div class="card-body">
+          <div class="card-title">
+            <div class="card-title-left">
+              <span class="asset-symbol">{{ a.symbol }}</span>
+              <span class="asset-name">{{ a.nome }}</span>
+              <span class="asset-cat">B3</span>
+            </div>
+            <button class="btn-remove" title="Remover" onclick="removeFavorito('{{ a.symbol }}', this)">✕</button>
+          </div>
+          <div class="card-price">
+            <span class="price-skeleton"></span>
+          </div>
+          <div class="sparkline-wrap">
+            <canvas id="spark-{{ a.symbol | replace('^','_') | replace('=','_') | replace('-','_') }}"></canvas>
+          </div>
+          <div class="card-metrics">
+            <div class="metric"><span class="metric-label">Sent. 7d</span><span class="metric-skeleton"></span></div>
+            <div class="metric"><span class="metric-label">Sent. 30d</span><span class="metric-skeleton"></span></div>
+            <div class="metric"><span class="metric-label">Volume</span><span class="metric-skeleton"></span></div>
+            <div class="metric"><span class="metric-label">Corr. IBOV</span><span class="metric-skeleton"></span></div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-action" onclick="openNoticias('{{ a.symbol }}', '{{ a.nome }}')">📰 Notícias</button>
+          <button class="btn-action" onclick="openDetalhe('{{ a.symbol }}', '{{ a.nome }}')">📊 Detalhe</button>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Card Adicionar -->
+      {% if max_ativos == -1 or user_count < max_ativos %}
+      <div class="add-card" onclick="openAddModal()">
+        <span class="add-icon">＋</span>
+        <span>Adicionar ativo B3</span>
+      </div>
+      {% else %}
+      <div class="add-card locked">
+        <span class="add-icon">🔒</span>
+        <span>Limite atingido</span>
+        <a href="{{ url_for('billing.planos') }}" class="btn primary" style="font-size:0.72rem; padding:0.3rem 0.8rem;">Fazer upgrade</a>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </section>
+
+</main>
+
+<footer>
+  Monitor Financeiro BR &nbsp;|&nbsp; Cotações via yfinance &nbsp;|&nbsp; Sentimento via VADER
+</footer>
+
+<!-- ── Modal: Adicionar Ativo ── -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Adicionar Ativo B3</h2>
+      <button class="modal-close" onclick="closeModal('modal-add')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="text" class="search-input" id="search-input" placeholder="Buscar por ticker ou nome (ex: PETR4, Petrobras)" autocomplete="off">
+      <div class="plan-limit-bar" id="limit-bar">
+        <span id="limit-text">{{ user_count }}/{% if max_ativos == -1 %}∞{% else %}{{ max_ativos }}{% endif %} ativos</span>
+        {% if max_ativos != -1 %}
+        <div class="limit-fill"><div class="limit-used {% if user_count >= max_ativos %}full{% endif %}" id="limit-used-bar" style="width: {{ [((user_count / max_ativos) * 100)|round|int, 100]|min }}%"></div></div>
+        {% endif %}
+        {% if max_ativos != -1 and user_count >= max_ativos %}
+        <a href="{{ url_for('billing.planos') }}" class="btn" style="font-size:0.65rem; padding:0.2rem 0.5rem;">Upgrade</a>
+        {% endif %}
+      </div>
+      <div class="search-results" id="search-results">
+        <p class="search-empty">Digite ao menos 2 caracteres para buscar</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Notícias ── -->
+<div class="modal-overlay" id="modal-news">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="news-modal-title">Notícias</h2>
+      <button class="modal-close" onclick="closeModal('modal-news')">✕</button>
+    </div>
+    <div class="modal-body" id="news-modal-body">
+      <p class="search-empty">Carregando...</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Detalhe ── -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-header">
+      <h2 id="detail-modal-title">Detalhe</h2>
+      <button class="modal-close" onclick="closeModal('modal-detail')">✕</button>
+    </div>
+    <div class="modal-body" id="detail-modal-body">
+      <div class="detail-tabs">
+        <button class="tab-btn active" onclick="switchTab(this,'7d')">7D</button>
+        <button class="tab-btn" onclick="switchTab(this,'30d')">30D</button>
+        <button class="tab-btn" onclick="switchTab(this,'ytd')">YTD</button>
+      </div>
+      <div class="detail-chart-wrap"><canvas id="detail-chart"></canvas></div>
+      <div class="detail-metrics" id="detail-metrics"></div>
+    </div>
+    <div class="modal-footer" id="detail-footer"></div>
+  </div>
+</div>
+
+<script>
+/* ── Dados injetados pelo servidor ── */
+const DEFAULT_SYMBOLS = {{ default_assets | map(attribute='symbol') | list | tojson }};
+const USER_SYMBOLS    = {{ user_assets | map(attribute='symbol') | list | tojson }};
+const MAX_ATIVOS      = {{ max_ativos }};
+let   userCount       = {{ user_count }};
+
+/* ── Helpers ── */
+function cardId(sym)   { return 'card-' + sym.replace(/[\^=\-]/g,'_'); }
+function sparkId(sym)  { return 'spark-' + sym.replace(/[\^=\-]/g,'_'); }
+
+function fmtPrice(v) {
+  if (v == null) return '—';
+  return v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:4});
+}
+function fmtVol(v) {
+  if (!v) return '—';
+  if (v >= 1e12) return (v/1e12).toFixed(1)+'T';
+  if (v >= 1e9)  return (v/1e9).toFixed(1)+'B';
+  if (v >= 1e6)  return (v/1e6).toFixed(1)+'M';
+  if (v >= 1e3)  return (v/1e3).toFixed(1)+'K';
+  return v.toString();
+}
+function fmtSent(v) {
+  if (v == null) return {text:'—', cls:'neu'};
+  const cls = v > 0.05 ? 'pos' : v < -0.05 ? 'neg' : 'neu';
+  return {text: (v > 0 ? '+' : '') + v.toFixed(3), cls};
+}
+function fmtCorr(v) {
+  if (v == null) return {text:'—', cls:'neu'};
+  const cls = v > 0.3 ? 'pos' : v < -0.3 ? 'neg' : 'neu';
+  return {text: (v > 0 ? '+' : '') + v.toFixed(3), cls};
+}
+
+const sparkCharts = {};
+let   detailChart = null;
+let   detailCurrentSym = null;
+let   detailData = {};  // {7d, 30d, ytd}
+
+/* ── Criar sparkline ── */
+function createSparkline(canvasId, labels, values, isPos) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  if (sparkCharts[canvasId]) sparkCharts[canvasId].destroy();
+
+  const color = isPos ? '#34d399' : '#f87171';
+  sparkCharts[canvasId] = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        borderColor: color,
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: true,
+        backgroundColor: isPos ? 'rgba(52,211,153,0.06)' : 'rgba(248,113,113,0.06)',
+        tension: 0.3,
+      }]
+    },
+    options: {
+      animation: false,
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: {display:false}, tooltip: {enabled:false} },
+      scales: { x:{display:false}, y:{display:false} },
+      elements: { point: {radius:0} },
+    }
+  });
+}
+
+/* ── Preencher card com dados ── */
+function populateCard(sym, data) {
+  const card = document.getElementById(cardId(sym));
+  if (!card) return;
+
+  card.classList.remove('loading');
+
+  const isPos = data.variacao != null ? data.variacao >= 0 : null;
+  const bar = card.querySelector('.card-top-bar');
+  bar.className = 'card-top-bar ' + (isPos === true ? 'pos' : isPos === false ? 'neg' : 'neu');
+
+  // Preço
+  const priceWrap = card.querySelector('.card-price');
+  const varCls = isPos === true ? 'pos' : isPos === false ? 'neg' : 'neu';
+  const varSign = data.variacao != null ? (data.variacao >= 0 ? '▲' : '▼') : '';
+  const varText = data.variacao != null ? varSign + Math.abs(data.variacao).toFixed(2) + '%' : '—';
+  priceWrap.innerHTML = `
+    <span class="price-value">R$ ${fmtPrice(data.preco)}</span>
+    <span class="price-var ${varCls}">${varText}</span>
+  `;
+
+  // Sparkline
+  if (data.sparkline_7d && data.sparkline_7d.length > 1) {
+    createSparkline(sparkId(sym), data.sparkline_7d_labels, data.sparkline_7d, isPos !== false);
+  }
+
+  // Métricas
+  const metrics = card.querySelectorAll('.metric');
+  const s7  = fmtSent(data.score_7d);
+  const s30 = fmtSent(data.score_30d);
+  const cor = fmtCorr(data.pearson);
+
+  if (metrics[0]) metrics[0].innerHTML = `<span class="metric-label">Sent. 7d</span><span class="metric-value ${s7.cls}">${s7.text}</span>`;
+  if (metrics[1]) metrics[1].innerHTML = `<span class="metric-label">Sent. 30d</span><span class="metric-value ${s30.cls}">${s30.text}</span>`;
+  if (metrics[2]) metrics[2].innerHTML = `<span class="metric-label">Volume</span><span class="metric-value neu">${fmtVol(data.volume)}</span>`;
+  if (metrics[3]) metrics[3].innerHTML = `<span class="metric-label">Corr. IBOV</span><span class="metric-value ${cor.cls}">${cor.text}</span>`;
+}
+
+/* ── Buscar e popular todos os cards ── */
+async function loadAllData() {
+  const all = [...DEFAULT_SYMBOLS, ...USER_SYMBOLS];
+  if (!all.length) return;
+
+  try {
+    const resp = await fetch('/meus-ativos/api/dados?symbols=' + encodeURIComponent(all.join(',')));
+    if (!resp.ok) return;
+    const data = await resp.json();
+    all.forEach(sym => { if (data[sym]) populateCard(sym, data[sym]); });
+  } catch (e) {
+    console.error('Erro ao buscar dados:', e);
+  }
+}
+
+/* ── Modal helpers ── */
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+/* ── Modal: Notícias ── */
+async function openNoticias(sym, nome) {
+  document.getElementById('news-modal-title').textContent = 'Notícias · ' + nome;
+  document.getElementById('news-modal-body').innerHTML = '<p class="search-empty">Carregando...</p>';
+  openModal('modal-news');
+
+  try {
+    const resp = await fetch('/meus-ativos/api/noticias/' + encodeURIComponent(sym));
+    const news = await resp.json();
+
+    if (!news.length) {
+      document.getElementById('news-modal-body').innerHTML = '<p class="search-empty">Nenhuma notícia encontrada no banco para este ativo.</p>';
+      return;
+    }
+
+    const html = news.map(n => `
+      <div class="news-item ${n.classe}">
+        <span class="news-score ${n.classe}">${n.score != null ? (n.score > 0 ? '+' : '') + n.score.toFixed(2) : '—'}</span>
+        <div class="news-content">
+          <a href="${n.url}" target="_blank" rel="noopener">${n.titulo}</a>
+          <div class="news-date">${n.data}</div>
+        </div>
+      </div>
+    `).join('');
+
+    document.getElementById('news-modal-body').innerHTML = `<div class="news-list">${html}</div>`;
+  } catch {
+    document.getElementById('news-modal-body').innerHTML = '<p class="search-empty">Erro ao carregar notícias.</p>';
+  }
+}
+
+/* ── Modal: Detalhe ── */
+async function openDetalhe(sym, nome) {
+  document.getElementById('detail-modal-title').textContent = 'Detalhe · ' + nome;
+  document.getElementById('detail-metrics').innerHTML = '';
+  document.getElementById('detail-footer').textContent = '';
+  openModal('modal-detail');
+
+  detailCurrentSym = sym;
+  detailData = {};
+
+  // Resetar tabs
+  document.querySelectorAll('#modal-detail .tab-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+
+  // Carregar dados do card
+  const cardEl = document.getElementById(cardId(sym));
+  if (cardEl) {
+    const sparkData = sparkCharts[sparkId(sym)];
+    if (sparkData) {
+      detailData['7d']  = { labels: sparkData.data.labels, values: sparkData.data.datasets[0].data };
+    }
+    const metrics = cardEl.querySelectorAll('.metric-value');
+    const mArr = Array.from(metrics);
+    document.getElementById('detail-metrics').innerHTML = `
+      <div class="detail-metric"><div class="metric-label">Sent. 7d</div><div class="metric-value ${mArr[0]?.className.split(' ').find(c=>['pos','neg','neu'].includes(c))||'neu'}">${mArr[0]?.textContent||'—'}</div></div>
+      <div class="detail-metric"><div class="metric-label">Sent. 30d</div><div class="metric-value ${mArr[1]?.className.split(' ').find(c=>['pos','neg','neu'].includes(c))||'neu'}">${mArr[1]?.textContent||'—'}</div></div>
+      <div class="detail-metric"><div class="metric-label">Volume</div><div class="metric-value neu">${mArr[2]?.textContent||'—'}</div></div>
+      <div class="detail-metric"><div class="metric-label">Corr. IBOV</div><div class="metric-value ${mArr[3]?.className.split(' ').find(c=>['pos','neg','neu'].includes(c))||'neu'}">${mArr[3]?.textContent||'—'}</div></div>
+    `;
+  }
+
+  // Buscar 30d e YTD em background
+  try {
+    const resp = await fetch('/meus-ativos/api/dados?symbols=' + encodeURIComponent(sym));
+    if (resp.ok) {
+      const d = await resp.json();
+      if (d[sym]) {
+        detailData['7d']  = { labels: d[sym].sparkline_7d_labels,  values: d[sym].sparkline_7d };
+        detailData['30d'] = { labels: d[sym].sparkline_30d_labels, values: d[sym].sparkline_30d };
+      }
+    }
+  } catch {}
+
+  // YTD assíncrono
+  fetch('/meus-ativos/api/historico/' + encodeURIComponent(sym))
+    .then(r => r.ok ? r.json() : null)
+    .then(d => { if (d) detailData['ytd'] = d; })
+    .catch(() => {});
+
+  renderDetailChart('7d');
+}
+
+function renderDetailChart(period) {
+  const data = detailData[period];
+  const canvas = document.getElementById('detail-chart');
+
+  if (detailChart) { detailChart.destroy(); detailChart = null; }
+
+  if (!data || !data.values || !data.values.length) {
+    document.getElementById('detail-footer').textContent = period === 'ytd' ? 'Dados YTD ainda carregando...' : 'Sem dados para este período.';
+    return;
+  }
+
+  const vals = data.values;
+  const first = vals[0], last = vals[vals.length-1];
+  const isUp = last >= first;
+  const color = isUp ? '#34d399' : '#f87171';
+
+  detailChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        data: vals,
+        borderColor: color,
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: true,
+        backgroundColor: isUp ? 'rgba(52,211,153,0.07)' : 'rgba(248,113,113,0.07)',
+        tension: 0.3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {display:false},
+        tooltip: {
+          callbacks: {
+            label: ctx => ' R$ ' + fmtPrice(ctx.parsed.y),
+          }
+        }
+      },
+      scales: {
+        x: { grid: {color:'rgba(255,255,255,0.04)'}, ticks: {color:'#7c8499', font:{size:10}, maxTicksLimit:6} },
+        y: { grid: {color:'rgba(255,255,255,0.04)'}, ticks: {color:'#7c8499', font:{size:10}, maxTicksLimit:5} },
+      }
+    }
+  });
+
+  const varPct = first ? ((last - first) / Math.abs(first) * 100).toFixed(2) : 0;
+  document.getElementById('detail-footer').textContent =
+    `${period.toUpperCase()} · Variação: ${varPct > 0 ? '+' : ''}${varPct}%  |  Min: R$ ${fmtPrice(Math.min(...vals))}  |  Max: R$ ${fmtPrice(Math.max(...vals))}`;
+}
+
+function switchTab(btn, period) {
+  document.querySelectorAll('#modal-detail .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDetailChart(period);
+}
+
+/* ── Modal: Adicionar Ativo ── */
+let searchTimer = null;
+let currentUserCount = userCount;
+
+function openAddModal() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-results').innerHTML = '<p class="search-empty">Digite ao menos 2 caracteres para buscar</p>';
+  openModal('modal-add');
+  setTimeout(() => document.getElementById('search-input').focus(), 150);
+}
+
+document.getElementById('search-input')?.addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  const q = e.target.value.trim();
+  if (q.length < 2) {
+    document.getElementById('search-results').innerHTML = '<p class="search-empty">Digite ao menos 2 caracteres para buscar</p>';
+    return;
+  }
+  searchTimer = setTimeout(() => doSearch(q), 280);
+});
+
+async function doSearch(q) {
+  try {
+    const resp = await fetch('/meus-ativos/api/buscar?q=' + encodeURIComponent(q));
+    const results = await resp.json();
+
+    if (!results.length) {
+      document.getElementById('search-results').innerHTML = '<p class="search-empty">Nenhum ativo encontrado</p>';
+      return;
+    }
+
+    const html = results.map(r => `
+      <div class="search-result-item">
+        <div class="result-info">
+          <span class="result-symbol">${r.symbol}</span>
+          <span class="result-name">${r.nome}</span>
+        </div>
+        <button class="btn btn-add-result" onclick="addFavorito('${r.symbol}', '${r.nome.replace(/'/g,"\\'")}')">+ Adicionar</button>
+      </div>
+    `).join('');
+
+    document.getElementById('search-results').innerHTML = html;
+  } catch {
+    document.getElementById('search-results').innerHTML = '<p class="search-empty">Erro na busca.</p>';
+  }
+}
+
+async function addFavorito(symbol, nome) {
+  if (MAX_ATIVOS !== -1 && currentUserCount >= MAX_ATIVOS) {
+    alert('Limite de ativos atingido. Faça upgrade do plano para adicionar mais.');
+    return;
+  }
+
+  try {
+    const resp = await fetch('/meus-ativos/api/favoritos', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({symbol, nome}),
+    });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      alert(data.error || 'Erro ao adicionar ativo.');
+      return;
+    }
+
+    currentUserCount++;
+    updateLimitUI();
+    closeModal('modal-add');
+    addCardToGrid(symbol, nome);
+    loadCardData(symbol);
+  } catch {
+    alert('Erro ao adicionar ativo.');
+  }
+}
+
+function addCardToGrid(symbol, nome) {
+  const grid = document.getElementById('grid-user');
+  const addCard = grid.querySelector('.add-card');
+
+  const safeId = symbol.replace(/[\^=\-]/g,'_');
+  const card = document.createElement('div');
+  card.className = 'asset-card loading';
+  card.id = 'card-' + safeId;
+  card.dataset.symbol = symbol;
+  card.innerHTML = `
+    <div class="card-top-bar loading-bar"></div>
+    <div class="card-body">
+      <div class="card-title">
+        <div class="card-title-left">
+          <span class="asset-symbol">${symbol}</span>
+          <span class="asset-name">${nome}</span>
+          <span class="asset-cat">B3</span>
+        </div>
+        <button class="btn-remove" title="Remover" onclick="removeFavorito('${symbol}', this)">✕</button>
+      </div>
+      <div class="card-price"><span class="price-skeleton"></span></div>
+      <div class="sparkline-wrap"><canvas id="spark-${safeId}"></canvas></div>
+      <div class="card-metrics">
+        <div class="metric"><span class="metric-label">Sent. 7d</span><span class="metric-skeleton"></span></div>
+        <div class="metric"><span class="metric-label">Sent. 30d</span><span class="metric-skeleton"></span></div>
+        <div class="metric"><span class="metric-label">Volume</span><span class="metric-skeleton"></span></div>
+        <div class="metric"><span class="metric-label">Corr. IBOV</span><span class="metric-skeleton"></span></div>
+      </div>
+    </div>
+    <div class="card-actions">
+      <button class="btn-action" onclick="openNoticias('${symbol}','${nome}')">📰 Notícias</button>
+      <button class="btn-action" onclick="openDetalhe('${symbol}','${nome}')">📊 Detalhe</button>
+    </div>
+  `;
+
+  if (addCard) grid.insertBefore(card, addCard);
+  else grid.appendChild(card);
+
+  // Atualizar badge contador
+  updateBadgeCount();
+}
+
+async function loadCardData(symbol) {
+  try {
+    const resp = await fetch('/meus-ativos/api/dados?symbols=' + encodeURIComponent(symbol));
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (data[symbol]) populateCard(symbol, data[symbol]);
+  } catch {}
+}
+
+async function removeFavorito(symbol, btnEl) {
+  if (!confirm('Remover ' + symbol + ' dos seus ativos?')) return;
+
+  try {
+    const resp = await fetch('/meus-ativos/api/favoritos/' + encodeURIComponent(symbol), {method: 'DELETE'});
+    if (!resp.ok) { alert('Erro ao remover.'); return; }
+
+    const card = document.getElementById(cardId(symbol));
+    if (card) card.remove();
+
+    currentUserCount = Math.max(0, currentUserCount - 1);
+    updateLimitUI();
+    updateBadgeCount();
+    ensureAddCard();
+  } catch {
+    alert('Erro ao remover ativo.');
+  }
+}
+
+function ensureAddCard() {
+  const grid = document.getElementById('grid-user');
+  if (!grid) return;
+  if (grid.querySelector('.add-card')) return;
+  if (MAX_ATIVOS !== -1 && currentUserCount >= MAX_ATIVOS) return;
+
+  const addCard = document.createElement('div');
+  addCard.className = 'add-card';
+  addCard.onclick = openAddModal;
+  addCard.innerHTML = '<span class="add-icon">＋</span><span>Adicionar ativo B3</span>';
+  grid.appendChild(addCard);
+}
+
+function updateLimitUI() {
+  const limitText = document.getElementById('limit-text');
+  const usedBar   = document.getElementById('limit-used-bar');
+  if (limitText) limitText.textContent = currentUserCount + '/' + (MAX_ATIVOS === -1 ? '∞' : MAX_ATIVOS) + ' ativos';
+  if (usedBar && MAX_ATIVOS > 0) {
+    const pct = Math.min(100, Math.round(currentUserCount / MAX_ATIVOS * 100));
+    usedBar.style.width = pct + '%';
+    usedBar.classList.toggle('full', currentUserCount >= MAX_ATIVOS);
+  }
+}
+
+function updateBadgeCount() {
+  const badge = document.getElementById('badge-count');
+  if (badge) badge.textContent = currentUserCount + '/' + (MAX_ATIVOS === -1 ? '∞' : MAX_ATIVOS) + ' ativos';
+}
+
+/* ── Inicializar ── */
+window.addEventListener('DOMContentLoaded', loadAllData);
+</script>
+</body>
+</html>
