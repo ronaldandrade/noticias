@@ -1,25 +1,372 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ noticia.titulo }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ noticia.titulo }} · Monitor Financeiro BR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0b0e15;
+    --sidebar:   #0f1219;
+    --surface:   #141820;
+    --surface2:  #1c2130;
+    --surface3:  #232a3a;
+    --border:    #262d3d;
+    --border2:   #1e2535;
+    --text:      #e2e8f0;
+    --text2:     #94a3b8;
+    --text3:     #64748b;
+    --accent:    #2563eb;
+    --accent-lt: #3b82f6;
+    --pos:       #10b981;
+    --neg:       #ef4444;
+    --neu:       #8b5cf6;
+    --gold:      #f59e0b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    height: 52px;
+    background: var(--sidebar);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+
+  .topbar-logo {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+  }
+
+  .topbar-logo-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-lt);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .topbar-sep { flex: 1; }
+
+  .topbar-user {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .topbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    transition: all 0.15s;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .topbar-btn:hover { border-color: var(--accent-lt); color: var(--accent-lt); background: rgba(59,130,246,0.06); }
+  .topbar-btn.accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .topbar-btn.accent:hover { background: var(--accent-lt); border-color: var(--accent-lt); color: #fff; }
+
+  /* ── Main ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .content {
+    padding: 1.75rem 1.5rem 4rem;
+    max-width: 760px;
+    width: 100%;
+  }
+
+  /* ── Back link ── */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text2);
+    text-decoration: none;
+    margin-bottom: 1.5rem;
+    transition: color 0.15s;
+  }
+  .back-link:hover { color: var(--accent-lt); }
+
+  /* ── Article ── */
+  .article {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .article-head {
+    padding: 1.75rem 2rem 1.5rem;
+    border-bottom: 1px solid var(--border2);
+  }
+
+  .article-meta-top {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .article-cat {
+    font-size: 0.62rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text3);
+    padding: 0.22rem 0.5rem;
+    border-radius: 4px;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+  }
+
+  .article-score {
+    font-size: 0.68rem;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    padding: 0.22rem 0.55rem;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .article-score.pos  { background: rgba(16,185,129,0.1); color: var(--pos); border: 1px solid rgba(16,185,129,0.2); }
+  .article-score.neg  { background: rgba(239,68,68,0.1);  color: var(--neg); border: 1px solid rgba(239,68,68,0.2); }
+  .article-score.neu  { background: rgba(139,92,246,0.1); color: var(--neu); border: 1px solid rgba(139,92,246,0.2); }
+  .article-score.none { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
+
+  .article-ticker {
+    font-size: 0.68rem;
+    font-family: 'DM Mono', monospace;
+    padding: 0.22rem 0.55rem;
+    border-radius: 4px;
+    background: rgba(59,130,246,0.12);
+    color: var(--accent-lt);
+  }
+
+  .article-title {
+    font-size: 1.55rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .article-byline {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    font-size: 0.72rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--text3);
+    flex-wrap: wrap;
+  }
+  .article-byline .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text3); }
+
+  /* ── Body ── */
+  .article-body {
+    padding: 1.75rem 2rem;
+  }
+
+  .article-resumo {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.6;
+    padding: 1rem 1.25rem;
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 1.75rem;
+  }
+
+  .article-text {
+    font-size: 0.95rem;
+    color: var(--text2);
+    line-height: 1.8;
+  }
+  .article-text p { margin-bottom: 1.1rem; }
+  .article-text p:last-child { margin-bottom: 0; }
+
+  /* ── Footer / CTA ── */
+  .article-foot {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .article-source {
+    font-size: 0.72rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--text3);
+  }
+
+  .btn-leia {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid var(--accent);
+    transition: all 0.15s;
+  }
+  .btn-leia:hover { background: var(--accent-lt); border-color: var(--accent-lt); }
+
+  /* ── Page footer ── */
+  .site-footer {
+    text-align: center;
+    padding: 1.5rem;
+    font-size: 0.72rem;
+    color: var(--text3);
+    border-top: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+  }
+
+  @media (max-width: 600px) {
+    .content { padding: 1.25rem 1rem 3rem; }
+    .article-head, .article-body, .article-foot { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .article-title { font-size: 1.3rem; }
+    .topbar-user .hide-sm { display: none; }
+  }
+</style>
 </head>
 <body>
-    <header>
-        <h1>{{ noticia.titulo }}</h1>
-        <a href="/" class="btn-voltar">Voltar</a>
-    </header>
-    <main>
-        <section class="noticia-detalhe">
-            <p>{{ noticia.conteudo }}</p>
-            <a href="{{ noticia.url }}" target="_blank" class="btn-leia-mais">Leia no Site</a>
-            <small>{{ noticia.data_publicacao.strftime('%d/%m/%Y %H:%M') }}</small>
-        </section>
-    </main>
-    <footer>
-        <p>© 2025 - Ronald Andrade</p>
-    </footer>
+
+<!-- ── Top bar ── -->
+<div class="topbar">
+  <a href="/" class="topbar-logo">
+    <div class="topbar-logo-dot"></div>
+    Monitor Financeiro BR
+  </a>
+  <div class="topbar-sep"></div>
+  <div class="topbar-user">
+    {% if current_user.is_authenticated %}
+      <span class="topbar-btn hide-sm" style="border:none;cursor:default;color:var(--text2)">
+        {{ current_user.nome or current_user.email }}
+      </span>
+      <a href="{{ url_for('auth.logout') }}" class="topbar-btn">Sair</a>
+    {% endif %}
+    <a href="{{ url_for('billing.planos') }}" class="topbar-btn hide-sm">Planos</a>
+    <a href="/relatorio" class="topbar-btn accent">Relatório</a>
+  </div>
+</div>
+
+<!-- ── Main ── -->
+<div class="main">
+  <div class="content">
+
+    <a href="/" class="back-link">‹ Voltar ao painel</a>
+
+    {% set score = noticia.score_sentimento %}
+    {% if score is not none %}
+      {% if score > 0.05 %}
+        {% set sc = 'pos' %}{% set sc_txt = '%+.2f' % score %}{% set sc_icon = '▲' %}{% set sc_label = 'Positivo' %}
+      {% elif score < -0.05 %}
+        {% set sc = 'neg' %}{% set sc_txt = '%+.2f' % score %}{% set sc_icon = '▼' %}{% set sc_label = 'Negativo' %}
+      {% else %}
+        {% set sc = 'neu' %}{% set sc_txt = '%+.2f' % score %}{% set sc_icon = '◆' %}{% set sc_label = 'Neutro' %}
+      {% endif %}
+    {% else %}
+      {% set sc = 'none' %}{% set sc_txt = '—' %}{% set sc_icon = '?' %}{% set sc_label = 'Sem score' %}
+    {% endif %}
+
+    <article class="article">
+      <div class="article-head">
+        <div class="article-meta-top">
+          {% if noticia.categoria %}
+            <span class="article-cat">{{ noticia.categoria | replace('_', ' ') | upper }}</span>
+          {% else %}
+            <span class="article-cat">GERAL</span>
+          {% endif %}
+          {% if noticia.ativo %}
+            <span class="article-ticker">{{ noticia.ativo.ticker | replace('.SA', '') }}</span>
+          {% endif %}
+          <span class="article-score {{ sc }}">{{ sc_icon }} {{ sc_txt }} · {{ sc_label }}</span>
+        </div>
+
+        <h1 class="article-title">{{ noticia.titulo }}</h1>
+
+        <div class="article-byline">
+          {% if noticia.fonte %}<span>{{ noticia.fonte }}</span><span class="dot"></span>{% endif %}
+          <span>{{ noticia.data_publicacao.strftime('%d/%m/%Y · %H:%M') }}</span>
+        </div>
+      </div>
+
+      <div class="article-body">
+        {% if noticia.resumo %}
+          <div class="article-resumo">{{ noticia.resumo }}</div>
+        {% endif %}
+        <div class="article-text">
+          {% for paragrafo in noticia.conteudo.split('\n') %}
+            {% if paragrafo.strip() %}<p>{{ paragrafo.strip() }}</p>{% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="article-foot">
+        {% if noticia.fonte %}<span class="article-source">Fonte original: {{ noticia.fonte }}</span>{% endif %}
+        <a href="{{ noticia.url }}" target="_blank" rel="noopener" class="btn-leia">Ler na fonte ↗</a>
+      </div>
+    </article>
+
+  </div>
+</div>
+
+<footer class="site-footer">
+  © 2025 · Ronald Andrade — Monitor Financeiro BR
+</footer>
+
 </body>
 </html>
