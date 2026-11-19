@@ -1,14 +1,8 @@
 from flask import (
     Blueprint, render_template, request, jsonify
 )
-from .models import Noticia, Ativo
+from .models import Noticia
 from .services.sentimento_service import aplicar_scores_em_lote
-from .services.cotacao_service import (
-    buscar_cotacoes_todos_ativos, calcular_correlacao_todos
-)
-from .services.relatorio_service import gerar_dados_relatorio
-from .services.termometro_service import gerar_termometro
-from .services.ner_service import aplicar_ner_em_lote
 from .scraper import buscar_noticias
 from .decorators import require_cron_secret
 from . import db
@@ -24,8 +18,6 @@ nltk.data.path.append(os.path.join(os.path.dirname(__file__), '../nltk_data'))
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 bp = Blueprint('main', __name__)
-relatorio_bp = Blueprint("relatorio", __name__, url_prefix="/relatorio")
-termometro_bp = Blueprint("termometro", __name__, url_prefix="/termometro")
 
 
 # ── Rotas principais ───────────────────────────────────────────────────────
@@ -81,13 +73,6 @@ def index():
     score_medio = (
         round(sum(scores_list) / len(scores_list), 3) if scores_list else 0.0
     )
-    total_com_ativo = Noticia.query.filter(
-        Noticia.ativo_id.isnot(None)
-    ).count()
-
-    ativos_map = {a.id: a for a in Ativo.query.all()}
-    for n in noticias_paginadas.items:
-        n.ativo = ativos_map.get(n.ativo_id)
 
     destaques_por_categoria = []
     for slug, label in CATEGORIAS_LABELS.items():
@@ -96,7 +81,6 @@ def index():
                    .order_by(Noticia.data_publicacao.desc())
                    .first())
         if noticia:
-            noticia.ativo = ativos_map.get(noticia.ativo_id)
             destaques_por_categoria.append({
                 'slug': slug,
                 'label': label,
@@ -114,7 +98,6 @@ def index():
         total_negativas=total_negativas,
         total_neutras=total_neutras,
         score_medio=score_medio,
-        total_com_ativo=total_com_ativo,
         destaques_por_categoria=destaques_por_categoria,
         categoria_ativa=categoria_filtro or '',
     )
@@ -152,48 +135,13 @@ def dashboard():
     contagem = Counter(palavras).most_common(5)
     top_assuntos = [{'assunto': a, 'frequencia': f} for a, f in contagem]
 
-    ativos = Ativo.query.all()
-    scores_por_ativo = []
-    for ativo in ativos:
-        noticias_ativo = [
-            n for n in itens
-            if n.ativo_id == ativo.id and n.score_sentimento is not None
-        ]
-        if noticias_ativo:
-            total = len(noticias_ativo)
-            media = sum(n.score_sentimento for n in noticias_ativo) / total
-            scores_por_ativo.append({
-                'ticker': ativo.ticker.replace('.SA', ''),
-                'nome': ativo.nome,
-                'score': round(media, 3),
-                'total': len(noticias_ativo),
-            })
-
     return render_template(
         'dashboard.html',
         top_assuntos=top_assuntos,
-        scores_por_ativo=scores_por_ativo,
         data_filtro=data_filtro,
         assunto_filtro=assunto_filtro,
         periodo=periodo,
     )
-
-
-# ── Relatório ──────────────────────────────────────────────────────────────
-
-@relatorio_bp.get("/")
-def relatorio():
-    dias = int(request.args.get("dias", 90))
-    dados = gerar_dados_relatorio(dias=dias)
-    return render_template("relatorio.html", **dados)
-
-
-# ── Termômetro ─────────────────────────────────────────────────────────────
-
-@termometro_bp.get("/")
-def termometro():
-    dados = gerar_termometro()
-    return render_template("termometro.html", **dados)
 
 
 # ── Admin: endpoints operacionais (autenticados por CRON_SECRET) ───────────
@@ -202,53 +150,9 @@ def termometro():
 @require_cron_secret
 def cron_atualizar():
     buscar_noticias()
-    buscar_cotacoes_todos_ativos(dias=1)
     n = aplicar_scores_em_lote(limite=500)
-    calcular_correlacao_todos(dias=90)
 
     return jsonify({"status": "ok", "scores_atualizados": n})
-
-
-@admin_bp.post("/scoring")
-@require_cron_secret
-def rodar_scoring():
-    buscar_cotacoes_todos_ativos(dias=90)
-    n_noticias = aplicar_scores_em_lote(limite=1000)
-    correlacoes = calcular_correlacao_todos(dias=90)
-
-    resultado = []
-    for c in correlacoes:
-        ativo = Ativo.query.get(c.ativo_id)
-        if not ativo:
-            continue
-        resultado.append({
-            "ticker": ativo.ticker,
-            "pearson": round(c.pearson, 4) if c.pearson is not None else None,
-            "spearman": (
-                round(c.spearman, 4) if c.spearman is not None else None
-            ),
-            "n_noticias": c.n_noticias,
-            "periodo": f"{c.data_inicio} → {c.data_fim}",
-        })
-
-    return jsonify({
-        "noticias_atualizadas": n_noticias, "correlacoes": resultado
-    })
-
-
-@admin_bp.post("/atualizar-completo")
-@require_cron_secret
-def atualizar_completo():
-    buscar_noticias()
-    buscar_cotacoes_todos_ativos(dias=90)
-    n_noticias = aplicar_scores_em_lote(limite=500)
-    correlacoes = calcular_correlacao_todos(dias=90)
-
-    return jsonify({
-        "status": "ok",
-        "noticias_atualizadas": n_noticias,
-        "correlacoes_calculadas": len(correlacoes),
-    })
 
 
 @admin_bp.get("/scores")
@@ -265,7 +169,6 @@ def listar_scores():
         {
             "titulo": n.titulo,
             "score": n.score_sentimento,
-            "ativo_id": n.ativo_id,
             "data": n.data_publicacao.isoformat(),
         }
         for n in noticias
@@ -275,7 +178,6 @@ def listar_scores():
 @admin_bp.get("/status")
 @require_cron_secret
 def status():
-    from .models import Cotacao, Correlacao
     return jsonify({
         "noticias": Noticia.query.count(),
         "com_score": Noticia.query.filter(
@@ -284,7 +186,4 @@ def status():
         "sem_score": Noticia.query.filter(
             Noticia.score_sentimento.is_(None)
         ).count(),
-        "cotacoes": Cotacao.query.count(),
-        "correlacoes": Correlacao.query.count(),
-        "ativos": Ativo.query.count(),
     })
