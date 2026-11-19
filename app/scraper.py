@@ -6,6 +6,7 @@ Com MAX_WORKERS=4, o tempo cai de ~40s para ~10-12s.
 """
 
 import logging
+import re
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -130,15 +131,32 @@ def _fazer_request(url: str) -> requests.Response | None:
         return None
 
 
+def _decodificar(resp: requests.Response) -> str:
+    """Decodifica o corpo: UTF-8 estrito; se falhar, usa o charset do header
+    (ex.: UOL serve ISO-8859-1) ou cp1252 como último recurso."""
+    try:
+        return resp.content.decode("utf-8")
+    except UnicodeDecodeError:
+        pass
+    m = re.search(r"charset=([\w-]+)", resp.headers.get("content-type", ""), re.I)
+    for enc in (m.group(1) if m else None, "cp1252"):
+        if not enc:
+            continue
+        try:
+            return resp.content.decode(enc)
+        except (UnicodeDecodeError, LookupError):
+            continue
+    return resp.content.decode("utf-8", errors="replace")
+
+
 # ── Raspagem RSS ───────────────────────────────────────────────────────────────
 
 def _raspar_rss(fonte: dict) -> list[dict]:
     resp = _fazer_request(fonte["url"])
     if not resp:
         return []
-    resp.encoding = "utf-8"
     try:
-        soup = BeautifulSoup(resp.text, "xml", from_encoding="utf-8")
+        soup = BeautifulSoup(_decodificar(resp), "xml")
     except Exception:
         return []
 
@@ -176,7 +194,7 @@ def _raspar_html(fonte: dict) -> list[dict]:
     if not resp:
         return []
 
-    soup     = BeautifulSoup(resp.content, "html.parser")
+    soup     = BeautifulSoup(_decodificar(resp), "html.parser")
     base_url = fonte["base_url"]
     itens  = []
     vistos: set[str] = set()
