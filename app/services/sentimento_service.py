@@ -11,9 +11,8 @@ from typing import Optional
 
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-from ..models import Ativo, Noticia
+from ..models import Noticia
 from .. import db
-from .assossiacao_service import associar_ativo
 
 logger = logging.getLogger(__name__)
 
@@ -91,16 +90,12 @@ def aplicar_scores_em_lote(limite: int = 500) -> int:
         logger.info("Nenhuma notícia sem score.")
         return 0
 
-    ativos = Ativo.query.all()
     atualizadas = 0
 
     for i, noticia in enumerate(noticias):
         try:
             texto = f"{noticia.titulo}. {noticia.conteudo}"
             noticia.score_sentimento = calcular_score(texto)
-
-            if noticia.ativo_id is None:
-                noticia.ativo_id = associar_ativo(noticia.titulo, noticia.conteudo or "", ativos)
 
             atualizadas += 1
 
@@ -117,6 +112,6 @@ def aplicar_scores_em_lote(limite: int = 500) -> int:
 
 def resetar_scores() -> None:
     db.session.query(Noticia).update(
-        {Noticia.score_sentimento: None, Noticia.ativo_id: None}
+        {Noticia.score_sentimento: None}
     )
     db.session.commit()

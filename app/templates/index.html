@@ -494,7 +494,6 @@
     border-radius: 3px;
   }
 
-  .news-tag.ticker { background: rgba(59,130,246,0.12); color: var(--accent-lt); }
   .news-tag.fonte  { background: var(--surface3); color: var(--text3); border: 1px solid var(--border); }
   .news-tag.data   { color: var(--text3); margin-left: auto; }
 
@@ -562,15 +561,6 @@
   </div>
   <div class="topbar-sep"></div>
   <div class="topbar-user">
-    {% if current_user.is_authenticated %}
-      <span class="topbar-btn" style="border:none;cursor:default;color:var(--text2)">
-        {{ current_user.nome or current_user.email }}
-      </span>
-      <a href="{{ url_for('auth.logout') }}" class="topbar-btn">Sair</a>
-    {% endif %}
-    <a href="{{ url_for('billing.planos') }}" class="topbar-btn">Planos</a>
-    <a href="/meus-ativos" class="topbar-btn">Meus Ativos</a>
-    <a href="/relatorio" class="topbar-btn accent">Relatório</a>
   </div>
 </div>
 
@@ -582,15 +572,6 @@
       <div class="sidebar-label">Navegação</div>
       <a href="/" class="sidebar-link active">
         <span class="icon">📊</span> Painel
-      </a>
-      <a href="/termometro" class="sidebar-link">
-        <span class="icon">🌡</span> Termômetro
-      </a>
-      <a href="/meus-ativos" class="sidebar-link">
-        <span class="icon">⭐</span> Meus Ativos
-      </a>
-      <a href="/relatorio" class="sidebar-link">
-        <span class="icon">📄</span> Relatório
       </a>
       <!-- <a href="/dashboard" class="sidebar-link">
         <span class="icon">📈</span> Dashboard
@@ -633,19 +614,6 @@
       </a>
     </div>
 
-    <div class="sidebar-divider"></div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-label">Conta</div>
-      {% if current_user.is_authenticated %}
-        <a href="{{ url_for('account.perfil') }}" class="sidebar-link">
-          <span class="icon">👤</span> Perfil
-        </a>
-      {% endif %}
-      <a href="{{ url_for('billing.planos') }}" class="sidebar-link">
-        <span class="icon">💳</span> Planos
-      </a>
-    </div>
   </aside>
 
   <!-- ── Main ── -->
@@ -661,7 +629,7 @@
             Painel de Notícias
           {% endif %}
         </div>
-        <div class="page-sub">sentimento · correlações · mercado financeiro BR</div>
+        <div class="page-sub">sentimento · notícias financeiras BR</div>
       </div>
 
       <!-- Stats strip -->
@@ -803,8 +771,6 @@
               <div class="news-card-top">
                 {% if noticia.categoria %}
                   <span class="news-cat-tag">{{ noticia.categoria | replace('_', ' ') | upper }}</span>
-                {% elif noticia.ativo %}
-                  <span class="news-cat-tag">{{ noticia.ativo.ticker | replace('.SA', '') }}</span>
                 {% else %}
                   <span class="news-cat-tag">GERAL</span>
                 {% endif %}
@@ -818,9 +784,6 @@
               {% endif %}
 
               <div class="news-footer">
-                {% if noticia.ativo %}
-                  <span class="news-tag ticker">{{ noticia.ativo.ticker | replace('.SA', '') }}</span>
-                {% endif %}
                 {% if noticia.fonte %}
                   <span class="news-tag fonte">{{ noticia.fonte }}</span>
                 {% endif %}

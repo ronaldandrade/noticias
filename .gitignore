@@ -10,4 +10,7 @@ pyvenv.cfg
 
 #ignore .cvs & .xlsx files
 *.cvs
-*.xlsx  
+*.xlsx
+.venv/
+__pycache__/
+*.pyc

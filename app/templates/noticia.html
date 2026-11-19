@@ -292,14 +292,6 @@
   </a>
   <div class="topbar-sep"></div>
   <div class="topbar-user">
-    {% if current_user.is_authenticated %}
-      <span class="topbar-btn hide-sm" style="border:none;cursor:default;color:var(--text2)">
-        {{ current_user.nome or current_user.email }}
-      </span>
-      <a href="{{ url_for('auth.logout') }}" class="topbar-btn">Sair</a>
-    {% endif %}
-    <a href="{{ url_for('billing.planos') }}" class="topbar-btn hide-sm">Planos</a>
-    <a href="/relatorio" class="topbar-btn accent">Relatório</a>
   </div>
 </div>
 
@@ -329,9 +321,6 @@
             <span class="article-cat">{{ noticia.categoria | replace('_', ' ') | upper }}</span>
           {% else %}
             <span class="article-cat">GERAL</span>
-          {% endif %}
-          {% if noticia.ativo %}
-            <span class="article-ticker">{{ noticia.ativo.ticker | replace('.SA', '') }}</span>
           {% endif %}
           <span class="article-score {{ sc }}">{{ sc_icon }} {{ sc_txt }} · {{ sc_label }}</span>
         </div>
