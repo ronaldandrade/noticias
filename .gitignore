@@ -1,16 +1,54 @@
+# Ambientes Virtuais
 venv/
-schema.db
-pyvenv.cfg
-*/__pycache__/*
-.vscode 
-.env
-
-# Ignore all .pyc files
-*.pyc       
-
-#ignore .cvs & .xlsx files
-*.cvs
-*.xlsx
 .venv/
+pyvenv.cfg
+
+# Segredos e Configurações de Ambiente
+.env
+.env.*
+!.env.example
+
+# Caches e Compilação Python
 __pycache__/
-*.pyc
+*/__pycache__/*
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# IDEs e Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dados brutos e processados (Conteúdo de notícias protegido por copyright)
+# Conforme restrição: nunca redistribuir texto completo dos artigos
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/annotations/*
+!data/annotations/.gitkeep
+*.parquet
+*.csv.gz
+
+# Modelos treinados grandes (pesos binários)
+models/*
+!models/.gitkeep
+*.pt
+*.bin
+*.safetensors
+*.joblib
+*.pkl
+
+# Bancos de dados locais / SQLite
+*.db
+*.sqlite3
+schema.db
+instance/
+
+# Planilhas / exportações locais
+*.xlsx
