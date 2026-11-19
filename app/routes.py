@@ -3,6 +3,7 @@ from flask import (
 )
 from .models import Noticia
 from .services.sentimento_service import aplicar_scores_em_lote
+from .services.projeto_service import stats_projeto
 from .scraper import buscar_noticias
 from .decorators import require_cron_secret
 from . import db
@@ -51,6 +52,11 @@ CATEGORIAS_ICONES = {
 
 @bp.route('/', methods=['GET'])
 def index():
+    return render_template('index.html', s=stats_projeto())
+
+
+@bp.route('/noticias', methods=['GET'])
+def noticias():
     data_filtro = request.args.get('data', None)
     assunto_filtro = request.args.get('assunto', None)
     periodo = request.args.get('periodo', None)
@@ -89,7 +95,7 @@ def index():
             })
 
     return render_template(
-        'index.html',
+        'noticias.html',
         noticias=noticias_paginadas.items,
         pagination=noticias_paginadas,
         total_noticias=total_noticias,

@@ -9,7 +9,7 @@
 <body>
     <header>
         <h1>Top 10 Assuntos nas Notícias</h1>
-        <a href="/" class="btn-voltar">Voltar</a>
+        <a href="/noticias" class="btn-voltar">Voltar</a>
     </header>
     <main>
         <section class="filtro-container">
@@ -33,7 +33,7 @@
                 {% for item in top_assuntos %}
                     <li class="ranking-item">
                         <span class="ranking-position">{{ loop.index }}</span>
-                        <a href="{{ url_for('main.index', assunto=item.assunto) }}" class="ranking-assunto">{{ item.assunto }}</a>                        <span class="ranking-frequencia">{{ item.frequencia }} menções</span>
+                        <a href="{{ url_for('main.noticias', assunto=item.assunto) }}" class="ranking-assunto">{{ item.assunto }}</a>                        <span class="ranking-frequencia">{{ item.frequencia }} menções</span>
                     </li>
                 {% endfor %}
             </ul>

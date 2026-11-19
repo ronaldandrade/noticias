@@ -2,841 +2,396 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monitor Financeiro BR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NLP Classifier · NLP para notícias financeiras em português</title>
+<meta name="description" content="Projeto de NLP: como coletamos notícias financeiras em português, construímos um dataset anotado e avaliamos modelos de sentimento.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:        #0b0e15;
-    --sidebar:   #0f1219;
-    --surface:   #141820;
-    --surface2:  #1c2130;
-    --surface3:  #232a3a;
-    --border:    #262d3d;
-    --border2:   #1e2535;
-    --text:      #e2e8f0;
-    --text2:     #94a3b8;
-    --text3:     #64748b;
-    --accent:    #2563eb;
-    --accent-lt: #3b82f6;
-    --pos:       #10b981;
-    --neg:       #ef4444;
-    --neu:       #8b5cf6;
-    --gold:      #f59e0b;
-    --sidebar-w: 220px;
+    --bg: #fbfaf7;
+    --surface: #ffffff;
+    --surface-2: #f4f2ec;
+    --ink: #15171c;
+    --muted: #5d636d;
+    --line: #e7e4dc;
+    --accent: #3547c9;
+    --accent-soft: #e9ecfb;
+    --pos: #1c7a4c;
+    --pos-soft: #e3f3ea;
+    --neg: #b23a31;
+    --neg-soft: #f9e8e6;
+    --neu: #6b7280;
+    --neu-soft: #eceef1;
+    --shadow: 0 1px 2px rgba(20,22,28,.04), 0 8px 24px rgba(20,22,28,.05);
+    --radius: 14px;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1015;
+      --surface: #151820;
+      --surface-2: #1b1f29;
+      --ink: #eceae4;
+      --muted: #9aa1ac;
+      --line: #262b36;
+      --accent: #8fa0ff;
+      --accent-soft: #1d2340;
+      --pos: #5ac58b;
+      --pos-soft: #13261c;
+      --neg: #ef8a80;
+      --neg-soft: #2c1816;
+      --neu: #9aa1ac;
+      --neu-soft: #1f232c;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); font-size: 17px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
   }
-
-  /* ── Top bar ── */
-  .topbar {
-    height: 52px;
-    background: var(--sidebar);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 1.5rem;
-    gap: 1rem;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    flex-shrink: 0;
-  }
-
-  .topbar-logo {
-    font-weight: 700;
-    font-size: 1rem;
-    color: var(--text);
-    letter-spacing: -0.02em;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .topbar-logo-dot {
-    width: 8px;
-    height: 8px;
-    background: var(--accent-lt);
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .topbar-sep { flex: 1; }
-
-  .topbar-user {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .topbar-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.8rem;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-decoration: none;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text2);
-    transition: all 0.15s;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .topbar-btn:hover { border-color: var(--accent-lt); color: var(--accent-lt); background: rgba(59,130,246,0.06); }
-  .topbar-btn.accent { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .topbar-btn.accent:hover { background: var(--accent-lt); border-color: var(--accent-lt); color: #fff; }
-
-  /* ── Body layout ── */
-  .layout {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-  }
-
-  /* ── Sidebar ── */
-  .sidebar {
-    width: var(--sidebar-w);
-    background: var(--sidebar);
-    border-right: 1px solid var(--border);
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    padding: 1.25rem 0;
-    position: sticky;
-    top: 52px;
-    height: calc(100vh - 52px);
-    overflow-y: auto;
-  }
-
-  .sidebar-section {
-    padding: 0 0.75rem 1rem;
-  }
-
-  .sidebar-label {
-    font-size: 0.65rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--text3);
-    padding: 0 0.75rem;
-    margin-bottom: 0.4rem;
-  }
-
-  .sidebar-link {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.45rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.82rem;
-    font-weight: 400;
-    color: var(--text2);
-    text-decoration: none;
-    transition: all 0.12s;
-    cursor: pointer;
-  }
-
-  .sidebar-link:hover { background: var(--surface2); color: var(--text); }
-  .sidebar-link.active { background: rgba(37,99,235,0.15); color: var(--accent-lt); font-weight: 500; }
-
-  .sidebar-link .icon { font-size: 0.9rem; width: 18px; text-align: center; flex-shrink: 0; }
-
-  .sidebar-divider {
-    height: 1px;
-    background: var(--border2);
-    margin: 0.5rem 0.75rem 1rem;
-  }
-
-  /* ── Main content ── */
-  .main {
-    flex: 1;
-    min-width: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .content {
-    padding: 1.5rem 3rem 3rem 3.5rem;
-    max-width: 1200px;
-    width: 100%;
-    position: relative;
-  }
-
-  /* ── Page header ── */
-  .page-header {
-    margin-bottom: 1.5rem;
-  }
-
-  .page-title {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: var(--text);
-    letter-spacing: -0.02em;
-    margin-bottom: 0.2rem;
-  }
-
-  .page-sub {
-    font-size: 0.78rem;
-    color: var(--text3);
-    font-family: 'DM Mono', monospace;
-  }
-
-  /* ── Stats strip ── */
-  .stats-strip {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 1.75rem;
-  }
-
-  .stat-item {
-    background: var(--surface);
-    padding: 1rem 1.25rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-  }
-
-  .stat-label {
-    font-size: 0.68rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text3);
-  }
-
-  .stat-value {
-    font-size: 1.6rem;
-    font-weight: 700;
-    line-height: 1;
-    font-family: 'DM Mono', monospace;
-    letter-spacing: -0.02em;
-  }
-
-  .stat-value.pos  { color: var(--pos); }
-  .stat-value.neg  { color: var(--neg); }
-  .stat-value.acc  { color: var(--accent-lt); }
-  .stat-value.neu  { color: var(--neu); }
-  .stat-sub { font-size: 0.7rem; color: var(--text3); margin-top: 0.1rem; }
-
-  /* ── Section heading ── */
-  .section-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.9rem;
-  }
-
-  .section-title {
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--text3);
-  }
-
-  /* ── Destaques por categoria ── */
-  .destaques-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 2rem;
-  }
-
-  .destaque-card {
-    background: var(--surface);
-    padding: 1.1rem 1.25rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    text-decoration: none;
-    transition: background 0.12s;
-    min-height: 130px;
-  }
-
-  .destaque-card:hover { background: var(--surface2); }
-
-  .destaque-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-  }
-
-  .destaque-cat {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.68rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text3);
-  }
-
-  .destaque-cat .cat-icon { font-size: 0.8rem; }
-
-  .destaque-badge {
-    font-size: 0.62rem;
-    font-family: 'DM Mono', monospace;
-    padding: 0.1rem 0.45rem;
-    border-radius: 3px;
-    font-weight: 500;
-  }
-
-  .destaque-badge.pos { background: rgba(16,185,129,0.1); color: var(--pos); border: 1px solid rgba(16,185,129,0.2); }
-  .destaque-badge.neg { background: rgba(239,68,68,0.1);  color: var(--neg); border: 1px solid rgba(239,68,68,0.2); }
-  .destaque-badge.neu { background: rgba(139,92,246,0.1); color: var(--neu); border: 1px solid rgba(139,92,246,0.2); }
-  .destaque-badge.none { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
-
-  .destaque-titulo {
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: var(--text);
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    flex: 1;
-  }
-
-  .destaque-footer {
-    font-size: 0.68rem;
-    color: var(--text3);
-    font-family: 'DM Mono', monospace;
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-  }
-
-  .destaque-fonte { color: var(--text3); }
-  .destaque-data  { color: var(--text3); margin-left: auto; }
-
-  /* ── Filtros ── */
-  .filters-bar {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .filters-form {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-    align-items: flex-end;
-  }
-
-  .filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .filter-group label {
-    font-size: 0.65rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text3);
-  }
-
-  .filter-group input,
-  .filter-group select {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 0.4rem 0.7rem;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-family: 'Inter', sans-serif;
-    outline: none;
-    transition: border-color 0.15s;
-    min-width: 130px;
-  }
-
-  .filter-group input:focus,
-  .filter-group select:focus { border-color: var(--accent-lt); }
-
-  .filter-group select option { background: var(--surface2); }
-
-  .filters-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-left: auto;
-    align-self: flex-end;
-  }
-
-  /* ── News cards grid ── */
-  .news-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 1.5rem;
-  }
-
-  .news-card {
-    background: var(--surface);
-    padding: 1.1rem 1.25rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    text-decoration: none;
-    transition: background 0.12s;
-    min-height: 160px;
-  }
-
-  .news-card:hover { background: var(--surface2); }
-
-  .news-card-top {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.5rem;
-  }
-
-  .news-score {
-    flex-shrink: 0;
-    font-size: 0.68rem;
-    font-family: 'DM Mono', monospace;
-    font-weight: 500;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    white-space: nowrap;
-  }
-
-  .news-score.pos { background: rgba(16,185,129,0.1); color: var(--pos); border: 1px solid rgba(16,185,129,0.2); }
-  .news-score.neg { background: rgba(239,68,68,0.1);  color: var(--neg); border: 1px solid rgba(239,68,68,0.2); }
-  .news-score.neu { background: rgba(139,92,246,0.1); color: var(--neu); border: 1px solid rgba(139,92,246,0.2); }
-  .news-score.none { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
-
-  .news-cat-tag {
-    font-size: 0.62rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text3);
-    padding: 0.2rem 0.45rem;
-    border-radius: 3px;
-    background: var(--surface3);
-    border: 1px solid var(--border);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 120px;
-  }
-
-  .news-titulo {
-    font-size: 0.84rem;
-    font-weight: 500;
-    color: var(--text);
-    line-height: 1.45;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    flex: 1;
-  }
-
-  .news-resumo {
-    font-size: 0.75rem;
-    color: var(--text2);
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .news-footer {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: auto;
-  }
-
-  .news-tag {
-    font-size: 0.65rem;
-    font-family: 'DM Mono', monospace;
-    padding: 0.1rem 0.45rem;
-    border-radius: 3px;
-  }
-
-  .news-tag.fonte  { background: var(--surface3); color: var(--text3); border: 1px solid var(--border); }
-  .news-tag.data   { color: var(--text3); margin-left: auto; }
-
-  /* empty state */
-  .news-empty {
-    background: var(--surface);
-    padding: 3rem;
-    text-align: center;
-    color: var(--text3);
-    font-size: 0.85rem;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    margin-bottom: 1.5rem;
-  }
-
-  /* ── Paginação ── */
-  .pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.35rem;
-  }
-
-  .pagination a, .pagination span {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 34px;
-    height: 34px;
-    padding: 0 0.65rem;
-    border-radius: 6px;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.78rem;
-    text-decoration: none;
-    border: 1px solid var(--border);
-    color: var(--text2);
-    background: var(--surface);
-    transition: all 0.12s;
-  }
-
-  .pagination a:hover { border-color: var(--accent-lt); color: var(--accent-lt); }
-  .pagination .atual  { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-  /* ── Responsive ── */
-  @media (max-width: 900px) {
-    .sidebar { display: none; }
-    .content { padding: 1rem 1.25rem 2rem; }
-    .stats-strip { grid-template-columns: repeat(3, 1fr); }
-  }
-
-  @media (max-width: 600px) {
-    .stats-strip { grid-template-columns: repeat(2, 1fr); }
-    .destaques-grid { grid-template-columns: 1fr; }
-    .news-grid { grid-template-columns: 1fr; }
-  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  .wrap { width: min(1080px, 100% - 40px); margin-inline: auto; }
+  .skip { position: absolute; left: -999px; top: 8px; background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; z-index: 100; }
+  .skip:focus { left: 12px; }
+
+  /* ── Navegação ── */
+  .nav { position: sticky; top: 0; z-index: 50; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 60px; }
+  .brand { font-family: var(--serif); font-weight: 600; font-size: 18px; color: var(--ink); display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+  .brand:hover { text-decoration: none; }
+  .brand i { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  .nav ul { list-style: none; display: flex; gap: 22px; margin: 0; padding: 0; font-size: 14.5px; }
+  .nav ul a { color: var(--muted); }
+  .nav ul a:hover { color: var(--ink); text-decoration: none; }
+  .nav .cta { color: var(--ink); border: 1px solid var(--line); padding: 6px 14px; border-radius: 999px; background: var(--surface); }
+  @media (max-width: 860px) { .nav ul li.hide-sm { display: none; } .nav ul { gap: 14px; } }
+
+  /* ── Tipografia de seção ── */
+  section { padding: 84px 0 0; }
+  .eyebrow { font-family: var(--mono); font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px; }
+  h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.15; margin: 0; letter-spacing: -.01em; }
+  h2 { font-size: clamp(28px, 4vw, 40px); margin-bottom: 18px; }
+  h3 { font-size: 20px; margin-bottom: 8px; }
+  .lead { font-size: clamp(18px, 2.2vw, 21px); color: var(--muted); max-width: 66ch; margin: 0; }
+  p { margin: 0 0 14px; }
+  .sub { color: var(--muted); max-width: 68ch; }
+  code, .mono { font-family: var(--mono); font-size: .86em; }
+  code { background: var(--surface-2); padding: 2px 7px; border-radius: 6px; border: 1px solid var(--line); }
+
+  /* ── Hero ── */
+  .hero { padding: 88px 0 0; }
+  .hero h1 { font-size: clamp(38px, 7vw, 68px); max-width: 16ch; margin-bottom: 22px; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; border-radius: 999px; font-size: 15px; font-weight: 500; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+  .btn:hover { text-decoration: none; border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  @media (prefers-color-scheme: dark) { .btn.primary { color: #0e1015; } }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 56px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .stat { background: var(--surface); padding: 22px 22px 20px; }
+  .stat b { display: block; font-family: var(--serif); font-size: clamp(28px, 4vw, 38px); font-weight: 600; line-height: 1.1; }
+  .stat span { display: block; margin-top: 6px; font-size: 14px; color: var(--muted); line-height: 1.4; }
+  @media (max-width: 760px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+
+  /* ── Cartões ── */
+  .grid { display: grid; gap: 18px; }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 900px) { .g4 { grid-template-columns: repeat(2, 1fr); } .g3 { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .g2, .g4 { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+  .card p:last-child { margin-bottom: 0; }
+  .card .n { font-family: var(--mono); font-size: 13px; color: var(--accent); margin-bottom: 10px; display: block; }
+  .card p { color: var(--muted); font-size: 15.5px; }
+
+  /* ── NLP: exemplo de frase ── */
+  .demo { margin-top: 36px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
+  .demo .row { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: center; padding: 14px 0; border-top: 1px dashed var(--line); }
+  .demo .row:first-child { border-top: 0; padding-top: 0; }
+  .demo .row:last-child { padding-bottom: 0; }
+  .demo .lbl { font-family: var(--mono); font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 14px; padding: 4px 11px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); }
+  .vec { font-family: var(--mono); font-size: 14px; color: var(--muted); overflow-x: auto; white-space: nowrap; }
+  .tag { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 13.5px; font-weight: 600; }
+  .tag.pos { background: var(--pos-soft); color: var(--pos); }
+  .tag.neg { background: var(--neg-soft); color: var(--neg); }
+  .tag.neu { background: var(--neu-soft); color: var(--neu); }
+  @media (max-width: 640px) { .demo { padding: 20px; } .demo .row { grid-template-columns: 1fr; gap: 8px; } }
+
+  .classes .card { border-top-width: 3px; }
+  .classes .pos { border-top-color: var(--pos); } .classes .neg { border-top-color: var(--neg); } .classes .neu { border-top-color: var(--neu); }
+  .classes blockquote { margin: 12px 0 0; padding: 10px 14px; background: var(--surface-2); border-radius: 10px; font-size: 14.5px; color: var(--ink); }
+
+  /* ── Pipeline ── */
+  .flow { list-style: none; counter-reset: s; margin: 36px 0 0; padding: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+  .flow li { counter-increment: s; position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 16px; box-shadow: var(--shadow); }
+  .flow li::before { content: counter(s); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-family: var(--mono); font-size: 13px; margin-bottom: 12px; }
+  .flow strong { display: block; font-size: 15px; margin-bottom: 4px; }
+  .flow span { font-size: 13.5px; color: var(--muted); line-height: 1.5; display: block; }
+  @media (max-width: 1000px) { .flow { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 620px) { .flow { grid-template-columns: 1fr; } }
+  ul.clean { list-style: none; padding: 0; margin: 0; }
+  ul.clean li { padding: 10px 0 10px 26px; position: relative; border-top: 1px solid var(--line); font-size: 15.5px; color: var(--muted); }
+  ul.clean li:first-child { border-top: 0; }
+  ul.clean li::before { content: ""; position: absolute; left: 4px; top: 20px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  ul.clean li b { color: var(--ink); font-weight: 600; }
+  .src { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .src span { padding: 5px 13px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; font-size: 14px; }
+
+  /* ── Dataset ── */
+  .funnel { margin-top: 34px; display: grid; gap: 12px; }
+  .frow { display: grid; grid-template-columns: 190px 1fr; gap: 16px; align-items: center; }
+  .frow .name { font-size: 14.5px; color: var(--muted); }
+  .bar { height: 38px; border-radius: 9px; background: var(--accent); color: #fff; display: flex; align-items: center; padding: 0 14px; font-family: var(--mono); font-size: 14px; min-width: max-content; }
+  @media (prefers-color-scheme: dark) { .bar { color: #0e1015; } }
+  .bar.b2 { opacity: .78; } .bar.b3 { opacity: .55; }
+  @media (max-width: 640px) { .frow { grid-template-columns: 1fr; gap: 6px; } }
+  .stack { display: flex; height: 44px; border-radius: 10px; overflow: hidden; margin: 14px 0 12px; border: 1px solid var(--line); }
+  .stack div { display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 13px; color: #fff; min-width: 0; overflow: hidden; }
+  .seg-pos { background: var(--pos); } .seg-neg { background: var(--neg); } .seg-neu { background: var(--neu); } .seg-tr { background: var(--accent); } .seg-va { background: #7d8be0; } .seg-te { background: #b0b9ee; color: #15171c !important; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; color: var(--muted); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 7px; }
+  .big { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 10px; }
+  .big b { font-family: var(--serif); font-size: 44px; font-weight: 600; line-height: 1; display: block; }
+  .big span { font-size: 14px; color: var(--muted); display: block; margin-top: 6px; line-height: 1.4; }
+  .note { margin-top: 22px; padding: 18px 20px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 12px 12px 0; font-size: 15.5px; }
+  .note p { margin-bottom: 8px; } .note p:last-child { margin-bottom: 0; }
+  h3.k { margin: 34px 0 10px; font-size: 18px; }
+
+  /* ── Modelos ── */
+  .models .card { display: flex; flex-direction: column; }
+  .status { align-self: flex-start; margin-bottom: 14px; padding: 3px 11px; border-radius: 999px; font-family: var(--mono); font-size: 12px; background: var(--neu-soft); color: var(--neu); }
+  .status.on { background: var(--accent-soft); color: var(--accent); }
+  .metrics { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .metrics span { font-size: 14px; padding: 5px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; }
+
+  /* ── Rodapé ── */
+  .stack-chips { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 8px; }
+  .stack-chips span { font-family: var(--mono); font-size: 13px; padding: 5px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+  footer { margin-top: 100px; padding: 32px 0 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14.5px; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 28px; }
+  footer nav { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 </style>
 </head>
 <body>
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
 
-<!-- ── Top bar ── -->
-<div class="topbar">
-  <div class="topbar-logo">
-    <div class="topbar-logo-dot"></div>
-    Monitor Financeiro BR
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="/"><i></i> NLP Classifier</a>
+    <ul>
+      <li class="hide-sm"><a href="#nlp">NLP</a></li>
+      <li class="hide-sm"><a href="#scraper">Scraper</a></li>
+      <li class="hide-sm"><a href="#dataset">Dataset</a></li>
+      <li class="hide-sm"><a href="#modelos">Modelos</a></li>
+      <li><a class="cta" href="/noticias">Ver a base →</a></li>
+    </ul>
   </div>
-  <div class="topbar-sep"></div>
-  <div class="topbar-user">
+</header>
+
+<main id="conteudo">
+
+  <!-- ═══ HERO ═══ -->
+  <div class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Projeto de NLP · Português do Brasil</p>
+      <h1>Ensinando máquinas a ler <em>notícias financeiras</em></h1>
+      <p class="lead">Um projeto de ponta a ponta: coletamos notícias em português, construímos um dataset anotado com critérios explícitos e comparamos modelos de análise de sentimento, com atenção ao que os números realmente provam.</p>
+      <div class="actions">
+        <a class="btn primary" href="#nlp">Como funciona</a>
+        <a class="btn" href="https://github.com/ronaldandrade/noticias" target="_blank" rel="noopener">Código no GitHub ↗</a>
+      </div>
+
+      <div class="stats" role="list">
+        <div class="stat" role="listitem"><b>{{ s.corpus.total_fmt }}</b><span>notícias coletadas diariamente ao longo de mais de um ano</span></div>
+        <div class="stat" role="listitem"><b>{{ s.fontes | length }}</b><span>fontes de notícias em português</span></div>
+        <div class="stat" role="listitem"><b>{{ s.dataset_n_fmt }}</b><span>títulos anotados em 3 classes</span></div>
+        <div class="stat" role="listitem"><b>{{ s.gold.kappa }}</b><span>kappa de Cohen contra rótulos humanos (itens com polaridade)</span></div>
+      </div>
+    </div>
   </div>
-</div>
 
-<div class="layout">
+  <!-- ═══ NLP ═══ -->
+  <section id="nlp" aria-labelledby="t-nlp">
+    <div class="wrap">
+      <p class="eyebrow">01 · O problema</p>
+      <h2 id="t-nlp">O que é NLP, na prática</h2>
+      <p class="lead">Processamento de Linguagem Natural é o conjunto de técnicas que transforma texto em algo que um modelo consegue medir, comparar e prever. Aqui, a tarefa é <strong>análise de sentimento</strong>: dado o título de uma notícia, ela é boa, ruim ou indiferente para a economia e o mercado?</p>
 
-  <!-- ── Sidebar ── -->
-  <aside class="sidebar">
-    <div class="sidebar-section">
-      <div class="sidebar-label">Navegação</div>
-      <a href="/" class="sidebar-link active">
-        <span class="icon">📊</span> Painel
-      </a>
-      <!-- <a href="/dashboard" class="sidebar-link">
-        <span class="icon">📈</span> Dashboard
-      </a> -->
+      <div class="demo" aria-label="Exemplo do caminho de um título até o rótulo">
+        <div class="row"><span class="lbl">Texto</span><div style="font-weight:500">“CVC desaba 15% após balanço do 1º trimestre”</div></div>
+        <div class="row"><span class="lbl">1 · Tokens</span><div class="chips"><span class="chip">cvc</span><span class="chip">desaba</span><span class="chip">15%</span><span class="chip">após</span><span class="chip">balanço</span><span class="chip">1º</span><span class="chip">trimestre</span></div></div>
+        <div class="row"><span class="lbl">2 · Representação</span><div class="vec">[0.0, 0.41, 0.0, 0.73, 0.12, …] &nbsp;→&nbsp; vetor numérico</div></div>
+        <div class="row"><span class="lbl">3 · Modelo</span><div class="vec">P(positivo)=0.04 · P(neutro)=0.11 · P(negativo)=0.85</div></div>
+        <div class="row"><span class="lbl">4 · Rótulo</span><div><span class="tag neg">Negativo</span></div></div>
+      </div>
+
+      <div class="grid g3 classes" style="margin-top:28px">
+        <div class="card pos"><h3>Positivo</h3><p>Fato favorável à economia, ao mercado ou à empresa citada.</p><blockquote>“Lucro do Nubank cresce 41% no 1º tri”</blockquote></div>
+        <div class="card neu"><h3>Neutro</h3><p>Informativo, ambíguo, misto, ou fora do escopo econômico.</p><blockquote>“Receita divulga regras do IR 2025”</blockquote></div>
+        <div class="card neg"><h3>Negativo</h3><p>Fato desfavorável: queda, perda, risco, crise ou evento adverso.</p><blockquote>“Casas Bahia pede recuperação judicial”</blockquote></div>
+      </div>
+
+      <div class="note" style="margin-top:28px">
+        <p><strong>Por que não basta contar palavras?</strong> “Ibovespa interrompe quatro meses de <em>queda</em>” contém uma palavra negativa e é uma notícia positiva. “Petróleo <em>sobe</em> após escalada de conflito” tem um verbo positivo e é um sinal de risco. O sentimento depende do fato e do ponto de vista, não do vocabulário isolado.</p>
+      </div>
     </div>
+  </section>
 
-    <div class="sidebar-divider"></div>
+  <!-- ═══ SCRAPER ═══ -->
+  <section id="scraper" aria-labelledby="t-scraper">
+    <div class="wrap">
+      <p class="eyebrow">02 · Coleta</p>
+      <h2 id="t-scraper">O scraper: de feeds RSS a um banco de dados</h2>
+      <p class="lead">Todo dia o sistema visita as fontes, extrai título, texto e data, e guarda cada notícia uma única vez, já com um primeiro score de sentimento e uma categoria temática.</p>
 
-    <div class="sidebar-section">
-      <div class="sidebar-label">Categorias</div>
-      <a href="/" class="sidebar-link {% if not categoria_ativa %}active{% endif %}">
-        <span class="icon">📰</span> Todas
-      </a>
-      <a href="/?categoria=mercado_financeiro" class="sidebar-link {% if categoria_ativa == 'mercado_financeiro' %}active{% endif %}">
-        <span class="icon">📈</span> Mercado Financeiro
-      </a>
-      <a href="/?categoria=economia_geral" class="sidebar-link {% if categoria_ativa == 'economia_geral' %}active{% endif %}">
-        <span class="icon">💹</span> Economia Geral
-      </a>
-      <a href="/?categoria=política" class="sidebar-link {% if categoria_ativa == 'política' %}active{% endif %}">
-        <span class="icon">🏛</span> Política
-      </a>
-      <a href="/?categoria=internacional" class="sidebar-link {% if categoria_ativa == 'internacional' %}active{% endif %}">
-        <span class="icon">🌐</span> Internacional
-      </a>
-      <a href="/?categoria=tecnologia" class="sidebar-link {% if categoria_ativa == 'tecnologia' %}active{% endif %}">
-        <span class="icon">💻</span> Tecnologia
-      </a>
-      <a href="/?categoria=energia" class="sidebar-link {% if categoria_ativa == 'energia' %}active{% endif %}">
-        <span class="icon">⚡</span> Energia
-      </a>
-      <a href="/?categoria=agronegócio" class="sidebar-link {% if categoria_ativa == 'agronegócio' %}active{% endif %}">
-        <span class="icon">🌾</span> Agronegócio
-      </a>
-      <a href="/?categoria=saúde" class="sidebar-link {% if categoria_ativa == 'saúde' %}active{% endif %}">
-        <span class="icon">🏥</span> Saúde
-      </a>
-      <a href="/?categoria=entretenimento" class="sidebar-link {% if categoria_ativa == 'entretenimento' %}active{% endif %}">
-        <span class="icon">🎬</span> Entretenimento
-      </a>
+      <ol class="flow">
+        <li><strong>Coleta paralela</strong><span>RSS e HTML, 4 threads, timeout de 8 s por fonte.</span></li>
+        <li><strong>Decodificação</strong><span>UTF-8 estrito; senão o charset do cabeçalho; senão cp1252.</span></li>
+        <li><strong>Deduplicação</strong><span>URL única no banco. Repetidas não entram.</span></li>
+        <li><strong>Resumo</strong><span>Duas frases extraídas do conteúdo.</span></li>
+        <li><strong>Score e categoria</strong><span>VADER com léxico financeiro e palavras-chave.</span></li>
+        <li><strong>Persistência</strong><span>PostgreSQL, com migrações versionadas.</span></li>
+      </ol>
+
+      <div class="grid g2" style="margin-top:28px">
+        <div class="card">
+          <h3>Fontes</h3>
+          <p>Veículos de economia e finanças em português, com feeds RSS ou páginas estruturadas.</p>
+          <div class="src">{% for f in s.fontes %}<span>{{ f }}</span>{% endfor %}</div>
+        </div>
+        <div class="card">
+          <h3>Decisões de engenharia</h3>
+          <ul class="clean">
+            <li><b>Idempotência.</b> Rodar duas vezes não duplica nada.</li>
+            <li><b>Tolerância a falhas.</b> Uma fonte fora do ar não derruba a coleta.</li>
+            <li><b>Atualização agendada</b> por endpoint protegido por segredo.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note">
+        <p><strong>Uma lição de dados.</strong> O feed da UOL é servido em ISO-8859-1 e o scraper forçava UTF-8, o que trocava cada acento por “�”. Cerca de 3 mil notícias antigas nasceram assim. A correção foi decodificar pelo charset do cabeçalho, e um filtro de qualidade agora exclui esses textos do dataset. Um dataset só é tão bom quanto a sua coleta.</p>
+      </div>
     </div>
+  </section>
 
-  </aside>
+  <!-- ═══ DATASET ═══ -->
+  <section id="dataset" aria-labelledby="t-dataset">
+    <div class="wrap">
+      <p class="eyebrow">03 · Dataset</p>
+      <h2 id="t-dataset">Como construímos o dataset anotado</h2>
+      <p class="lead">Um modelo só pode ser avaliado contra rótulos confiáveis. Por isso o dataset segue regras escritas num guia de anotação, com amostra aleatória e divisão temporal para evitar vazamento.</p>
 
-  <!-- ── Main ── -->
-  <div class="main">
-    <div class="content">
-
-      <!-- Page header -->
-      <div class="page-header">
-        <div class="page-title">
-          {% if categoria_ativa %}
-            {{ categoria_ativa | replace('_', ' ') | title }}
-          {% else %}
-            Painel de Notícias
-          {% endif %}
-        </div>
-        <div class="page-sub">sentimento · notícias financeiras BR</div>
+      <h3 class="k">Do corpus bruto à amostra</h3>
+      <div class="funnel">
+        <div class="frow"><span class="name">Corpus bruto</span><div class="bar" style="width:100%">{{ s.funil.bruto_fmt }}</div></div>
+        <div class="frow"><span class="name">Após filtros e duplicatas</span><div class="bar b2" style="width:{{ s.funil.limpo_pct }}%">{{ s.funil.limpo_fmt }}</div></div>
+        <div class="frow"><span class="name">Amostra anotada</span><div class="bar b3" style="width:{{ s.funil.anotado_pct }}%">{{ s.dataset_n_fmt }}</div></div>
       </div>
+      <p class="sub" style="margin-top:14px;font-size:15px">Filtros: textos com erro de encoding, textos em inglês e duplicatas por URL e por título normalizado.</p>
 
-      <!-- Stats strip -->
-      <div class="stats-strip">
-        <div class="stat-item">
-          <span class="stat-label">Total</span>
-          <span class="stat-value acc">{{ total_noticias }}</span>
-          <span class="stat-sub">notícias indexadas</span>
+      <div class="grid g2" style="margin-top:30px">
+        <div class="card">
+          <h3>Amostragem sem viés</h3>
+          <p>1.000 títulos sorteados ao acaso, estratificados por fonte e mês. A seleção <strong>não usa</strong> score nem palavras-chave: escolher os exemplos “mais confiantes” de um léxico produziria um conjunto fácil, que premia justamente o baseline lexical.</p>
         </div>
-        <div class="stat-item">
-          <span class="stat-label">Positivas</span>
-          <span class="stat-value pos">{{ total_positivas }}</span>
-          <span class="stat-sub">score &gt; +0.05</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Negativas</span>
-          <span class="stat-value neg">{{ total_negativas }}</span>
-          <span class="stat-sub">score &lt; −0.05</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Neutras</span>
-          <span class="stat-value neu">{{ total_neutras }}</span>
-          <span class="stat-sub">entre −0.05 e +0.05</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Score médio</span>
-          <span class="stat-value {% if score_medio > 0.05 %}pos{% elif score_medio < -0.05 %}neg{% else %}neu{% endif %}">
-            {{ '%+.2f' % score_medio if score_medio else '—' }}
-          </span>
-          <span class="stat-sub">sentimento geral</span>
+        <div class="card">
+          <h3>Anotação cega</h3>
+          <p>Mais {{ s.gold.n }} títulos que já tinham rótulo humano entraram na amostra e foram anotados <strong>sem ver</strong> esse rótulo. Isso permite medir a concordância de verdade, em vez de supor que ela existe.</p>
         </div>
       </div>
 
-      <!-- Destaques por categoria -->
-      {% if destaques_por_categoria and not categoria_ativa %}
-        <div class="section-head">
-          <span class="section-title">Destaques por categoria</span>
-        </div>
-        <div class="destaques-grid">
-          {% for dest in destaques_por_categoria %}
-            {% set n = dest.noticia %}
-            {% set score = n.score_sentimento %}
-            {% if score is not none %}
-              {% if score > 0.05 %}
-                {% set sc = 'pos' %}{% set sc_txt = '%+.2f' % score %}
-              {% elif score < -0.05 %}
-                {% set sc = 'neg' %}{% set sc_txt = '%+.2f' % score %}
-              {% else %}
-                {% set sc = 'neu' %}{% set sc_txt = '%+.2f' % score %}
-              {% endif %}
-            {% else %}
-              {% set sc = 'none' %}{% set sc_txt = '—' %}
-            {% endif %}
-            <a href="{{ url_for('main.noticia_detalhe', id=n.id) }}" class="destaque-card">
-              <div class="destaque-header">
-                <span class="destaque-cat">
-                  <span class="cat-icon">{{ dest.icone }}</span>
-                  {{ dest.label }}
-                </span>
-                <span class="destaque-badge {{ sc }}">{{ sc_txt }}</span>
-              </div>
-              <div class="destaque-titulo">{{ n.titulo }}</div>
-              <div class="destaque-footer">
-                {% if n.fonte %}<span class="destaque-fonte">{{ n.fonte }}</span>{% endif %}
-                <span class="destaque-data">{{ n.data_publicacao.strftime('%d/%m/%Y') }}</span>
-              </div>
-            </a>
-          {% endfor %}
-        </div>
-      {% endif %}
-
-      <!-- Filtros -->
-      <div class="filters-bar">
-        <form method="GET" action="/" class="filters-form">
-          <div class="filter-group">
-            <label for="data">A partir de</label>
-            <input type="date" id="data" name="data" value="{{ request.args.get('data', '') }}">
-          </div>
-          <div class="filter-group">
-            <label for="assunto">Assunto</label>
-            <input type="text" id="assunto" name="assunto" placeholder="Petrobras, dólar..."
-                   value="{{ request.args.get('assunto', '') }}">
-          </div>
-          <div class="filter-group">
-            <label for="periodo">Período</label>
-            <select id="periodo" name="periodo">
-              <option value="">Todos</option>
-              <option value="semana" {% if request.args.get('periodo') == 'semana' %}selected{% endif %}>Última semana</option>
-              <option value="mes"    {% if request.args.get('periodo') == 'mes'    %}selected{% endif %}>Último mês</option>
-            </select>
-          </div>
-          <div class="filter-group">
-            <label for="categoria">Categoria</label>
-            <select id="categoria" name="categoria">
-              <option value="">Todas</option>
-              <option value="mercado_financeiro" {% if request.args.get('categoria') == 'mercado_financeiro' %}selected{% endif %}>Mercado Financeiro</option>
-              <option value="política"           {% if request.args.get('categoria') == 'política'           %}selected{% endif %}>Política</option>
-              <option value="economia_geral"     {% if request.args.get('categoria') == 'economia_geral'     %}selected{% endif %}>Economia Geral</option>
-              <option value="internacional"      {% if request.args.get('categoria') == 'internacional'      %}selected{% endif %}>Internacional</option>
-              <option value="tecnologia"         {% if request.args.get('categoria') == 'tecnologia'         %}selected{% endif %}>Tecnologia</option>
-              <option value="energia"            {% if request.args.get('categoria') == 'energia'            %}selected{% endif %}>Energia</option>
-              <option value="agronegócio"        {% if request.args.get('categoria') == 'agronegócio'        %}selected{% endif %}>Agronegócio</option>
-              <option value="saúde"              {% if request.args.get('categoria') == 'saúde'              %}selected{% endif %}>Saúde</option>
-              <option value="entretenimento"     {% if request.args.get('categoria') == 'entretenimento'     %}selected{% endif %}>Entretenimento</option>
-              <option value="geral"              {% if request.args.get('categoria') == 'geral'              %}selected{% endif %}>Geral</option>
-            </select>
-          </div>
-          <div class="filters-actions">
-            <a href="/" class="topbar-btn">Limpar</a>
-            <button type="submit" class="topbar-btn accent">Filtrar</button>
-          </div>
-        </form>
-      </div>
-
-      <!-- Grid de notícias -->
-      <div class="section-head">
-        <span class="section-title">
-          Notícias — página {{ pagination.page }} de {{ pagination.pages }}
-        </span>
-      </div>
-
-      {% if noticias %}
-        <div class="news-grid">
-          {% for noticia in noticias %}
-            {% set score = noticia.score_sentimento %}
-            {% if score is not none %}
-              {% if score > 0.05 %}
-                {% set sc = 'pos' %}{% set sc_txt = '%+.2f' % score %}{% set sc_icon = '▲' %}
-              {% elif score < -0.05 %}
-                {% set sc = 'neg' %}{% set sc_txt = '%+.2f' % score %}{% set sc_icon = '▼' %}
-              {% else %}
-                {% set sc = 'neu' %}{% set sc_txt = '%+.2f' % score %}{% set sc_icon = '◆' %}
-              {% endif %}
-            {% else %}
-              {% set sc = 'none' %}{% set sc_txt = '—' %}{% set sc_icon = '?' %}
-            {% endif %}
-
-            <a href="{{ url_for('main.noticia_detalhe', id=noticia.id) }}" class="news-card">
-              <div class="news-card-top">
-                {% if noticia.categoria %}
-                  <span class="news-cat-tag">{{ noticia.categoria | replace('_', ' ') | upper }}</span>
-                {% else %}
-                  <span class="news-cat-tag">GERAL</span>
-                {% endif %}
-                <span class="news-score {{ sc }}">{{ sc_icon }} {{ sc_txt }}</span>
-              </div>
-
-              <div class="news-titulo">{{ noticia.titulo }}</div>
-
-              {% if noticia.resumo %}
-                <div class="news-resumo">{{ noticia.resumo }}</div>
-              {% endif %}
-
-              <div class="news-footer">
-                {% if noticia.fonte %}
-                  <span class="news-tag fonte">{{ noticia.fonte }}</span>
-                {% endif %}
-                <span class="news-tag data">{{ noticia.data_publicacao.strftime('%d/%m/%Y') }}</span>
-              </div>
-            </a>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="news-empty">
-          Nenhuma notícia encontrada com os filtros aplicados.
-        </div>
-      {% endif %}
-
-      <!-- Paginação -->
-      <div class="pagination">
-        {% if pagination.has_prev %}
-          <a href="{{ url_for('main.index', page=pagination.prev_num,
-                     data=request.args.get('data'),
-                     assunto=request.args.get('assunto'),
-                     periodo=request.args.get('periodo'),
-                     categoria=request.args.get('categoria')) }}">‹</a>
-        {% endif %}
-
-        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-          {% if p %}
-            {% if p == pagination.page %}
-              <span class="atual">{{ p }}</span>
-            {% else %}
-              <a href="{{ url_for('main.index', page=p,
-                         data=request.args.get('data'),
-                         assunto=request.args.get('assunto'),
-                         periodo=request.args.get('periodo'),
-                         categoria=request.args.get('categoria')) }}">{{ p }}</a>
-            {% endif %}
-          {% else %}
-            <span style="border:none;background:none">…</span>
-          {% endif %}
+      {% if s.dataset %}
+      <h3 class="k">Distribuição das classes</h3>
+      <div class="stack" role="img" aria-label="Distribuição das classes no dataset">
+        {% for c in s.dataset.classes %}
+          <div class="{{ 'seg-pos' if c.nome=='Positivo' else 'seg-neg' if c.nome=='Negativo' else 'seg-neu' }}" style="width:{{ c.pct }}%">{% if c.pct >= 8 %}{{ c.pct|round|int }}%{% endif %}</div>
         {% endfor %}
+      </div>
+      <div class="legend">
+        {% for c in s.dataset.classes %}<span><i style="background:var({{ '--pos' if c.nome=='Positivo' else '--neg' if c.nome=='Negativo' else '--neu' }})"></i>{{ c.nome }}: {{ c.n }}</span>{% endfor %}
+      </div>
+      <p class="sub" style="margin-top:12px;font-size:15px">A maioria das notícias é neutra, o que reflete a realidade do noticiário. Por isso a métrica principal é o <strong>F1 macro</strong>, que não deixa a classe dominante esconder o desempenho nas outras.</p>
 
-        {% if pagination.has_next %}
-          <a href="{{ url_for('main.index', page=pagination.next_num,
-                     data=request.args.get('data'),
-                     assunto=request.args.get('assunto'),
-                     periodo=request.args.get('periodo'),
-                     categoria=request.args.get('categoria')) }}">›</a>
-        {% endif %}
+      <h3 class="k">Divisão temporal</h3>
+      <div class="stack" role="img" aria-label="Divisão em treino, validação e teste por data">
+        {% for sp in s.dataset.splits %}
+          <div class="{{ 'seg-tr' if sp.nome=='Treino' else 'seg-va' if sp.nome=='Validação' else 'seg-te' }}" style="width:{{ sp.pct }}%">{% if sp.pct >= 8 %}{{ sp.nome }}{% endif %}</div>
+        {% endfor %}
+      </div>
+      <div class="legend">
+        {% for sp in s.dataset.splits %}<span><i style="background:var(--accent);opacity:{{ 1 if sp.nome=='Treino' else 0.7 if sp.nome=='Validação' else 0.45 }}"></i>{{ sp.nome }}: {{ sp.n }}{% if sp.nome == 'Treino' %} · mais antigas{% elif sp.nome == 'Teste' %} · mais recentes{% endif %}</span>{% endfor %}
+      </div>
+      <p class="sub" style="margin-top:12px;font-size:15px">O teste reúne as notícias <strong>mais recentes</strong>. Modelo e avaliação nunca veem o futuro uns dos outros, como num uso real.</p>
+      {% endif %}
+
+      <h3 class="k">Concordância com os rótulos humanos</h3>
+      <div class="card">
+        <div class="big">
+          <div><b>{{ s.gold.acordo }}%</b><span>de acordo nos {{ s.gold.n_binario }} itens em que o anotador viu polaridade</span></div>
+          <div><b>{{ s.gold.kappa }}</b><span>kappa de Cohen, nesse mesmo recorte</span></div>
+        </div>
       </div>
 
-    </div><!-- /content -->
-  </div><!-- /main -->
+      <div class="note">
+        <p><strong>O que esses números não dizem.</strong> Os rótulos humanos antigos não tinham a classe <em>neutro</em>: era escolher entre positivo e negativo para tudo. Por isso o recorte acima só considera itens com polaridade, e {{ s.gold.disputados }} itens com polaridade oposta foram separados para revisão humana. Além disso, o anotador deste dataset é um único modelo de linguagem seguindo o guia, então os rótulos refletem esse critério.</p>
+        <p>Dizer isso no próprio projeto faz parte do método: o resultado de qualquer modelo deve ser lido como “concordância com este critério de anotação”.</p>
+      </div>
+    </div>
+  </section>
 
-</div><!-- /layout -->
+  <!-- ═══ MODELOS ═══ -->
+  <section id="modelos" aria-labelledby="t-modelos">
+    <div class="wrap">
+      <p class="eyebrow">04 · Avaliação</p>
+      <h2 id="t-modelos">Modelos comparados no mesmo teste</h2>
+      <p class="lead">A pergunta do projeto é simples: quanto um modelo mais sofisticado melhora sobre um baseline barato? A resposta só vale se todos forem medidos no mesmo conjunto de teste e com incerteza reportada.</p>
 
+      <div class="grid g3 models" style="margin-top:32px">
+        <div class="card"><span class="status on">baseline atual</span><h3>Léxico + VADER</h3><p>Dicionário de palavras financeiras somado a um analisador de sentimento por regras. Rápido, sem treino, é o ponto de partida.</p></div>
+        <div class="card"><span class="status">em desenvolvimento</span><h3>TF-IDF + regressão logística</h3><p>Representa cada título pela importância de suas palavras e aprende os pesos a partir dos rótulos. Clássico e interpretável.</p></div>
+        <div class="card"><span class="status">em desenvolvimento</span><h3>BERTimbau (fine-tuning)</h3><p>Modelo de linguagem pré-treinado em português, ajustado à tarefa. Entende contexto: “queda” depende do que caiu.</p></div>
+      </div>
+
+      <h3 class="k">Como os resultados serão reportados</h3>
+      <div class="metrics">
+        <span>F1 macro</span><span>Precisão e recall por classe</span><span>Matriz de confusão</span><span>Intervalo de confiança (bootstrap)</span><span>Teste de significância (McNemar)</span><span>Análise qualitativa de erros</span>
+      </div>
+      <p class="sub" style="margin-top:14px;font-size:15px">Com poucos exemplos positivos e negativos no teste, os intervalos serão largos, e a página mostrará isso em vez de esconder.</p>
+    </div>
+  </section>
+
+  <!-- ═══ STACK ═══ -->
+  <section id="stack" aria-labelledby="t-stack">
+    <div class="wrap">
+      <p class="eyebrow">05 · Reprodutibilidade</p>
+      <h2 id="t-stack">Código aberto e reproduzível</h2>
+      <p class="sub">Os rótulos são publicados com <code>id</code>, <code>url</code>, fonte, data e classe. O texto dos artigos não é redistribuído, por respeito aos direitos dos veículos. A amostra é regenerada por script com semente fixa.</p>
+      <div class="stack-chips"><span>Python</span><span>Flask</span><span>SQLAlchemy</span><span>PostgreSQL</span><span>pandas</span><span>scikit-learn</span><span>VADER</span><span>pytest</span><span>Hugging Face (planejado)</span></div>
+      <div class="actions"><a class="btn primary" href="https://github.com/ronaldandrade/noticias" target="_blank" rel="noopener">Ver repositório ↗</a><a class="btn" href="/noticias">Explorar a base coletada</a></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 · Ronald Andrade</span>
+    <nav aria-label="Rodapé"><a href="/noticias">Notícias coletadas</a><a href="/api/v1/health">API</a><a href="https://github.com/ronaldandrade/noticias" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
 </body>
 </html>
