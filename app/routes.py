@@ -1,8 +1,7 @@
 from flask import (
-    Blueprint, render_template, redirect, url_for, request, jsonify
+    Blueprint, render_template, request, jsonify
 )
-from flask_login import login_required
-from .models import Noticia, Ativo, User, Subscription, Plan
+from .models import Noticia, Ativo
 from .services.sentimento_service import aplicar_scores_em_lote
 from .services.cotacao_service import (
     buscar_cotacoes_todos_ativos, calcular_correlacao_todos
@@ -11,7 +10,7 @@ from .services.relatorio_service import gerar_dados_relatorio
 from .services.termometro_service import gerar_termometro
 from .services.ner_service import aplicar_ner_em_lote
 from .scraper import buscar_noticias
-from .decorators import require_admin, require_plan
+from .decorators import require_cron_secret
 from . import db
 from .repository import filtrar_noticias
 import nltk
@@ -59,7 +58,6 @@ CATEGORIAS_ICONES = {
 
 
 @bp.route('/', methods=['GET'])
-@login_required
 def index():
     data_filtro = request.args.get('data', None)
     assunto_filtro = request.args.get('assunto', None)
@@ -122,38 +120,13 @@ def index():
     )
 
 
-@bp.route('/atualizar')
-@login_required
-def atualizar():
-    import threading
-    from flask import current_app
-
-    app = current_app._get_current_object()
-
-    def rodar_em_background():
-        with app.app_context():
-            try:
-                buscar_noticias()
-                buscar_cotacoes_todos_ativos(dias=1)
-                aplicar_scores_em_lote(limite=200)
-                aplicar_ner_em_lote(limite=200)
-                app.logger.info("Pipeline concluído com sucesso.")
-            except Exception as e:
-                app.logger.error(f"Erro no pipeline: {e}")
-
-    threading.Thread(target=rodar_em_background, daemon=True).start()
-    return redirect(url_for('main.index'))
-
-
 @bp.route('/noticia/<int:id>')
-@login_required
 def noticia_detalhe(id):
     noticia = Noticia.query.get_or_404(id)
     return render_template('noticia.html', noticia=noticia)
 
 
 @bp.route('/dashboard', methods=['GET'])
-@login_required
 def dashboard():
     data_filtro = request.args.get('data', None)
     assunto_filtro = request.args.get('assunto', None)
@@ -206,35 +179,28 @@ def dashboard():
     )
 
 
-# ── Relatório (plano Pro+) ─────────────────────────────────────────────────
+# ── Relatório ──────────────────────────────────────────────────────────────
 
 @relatorio_bp.get("/")
-@login_required
-@require_plan("pro", "enterprise")
 def relatorio():
     dias = int(request.args.get("dias", 90))
     dados = gerar_dados_relatorio(dias=dias)
     return render_template("relatorio.html", **dados)
 
 
-# ── Termômetro (plano Pro+) ────────────────────────────────────────────────
+# ── Termômetro ─────────────────────────────────────────────────────────────
 
 @termometro_bp.get("/")
-@login_required
-@require_plan("pro", "enterprise")
 def termometro():
     dados = gerar_termometro()
     return render_template("termometro.html", **dados)
 
 
-# ── Admin: cron (autenticado por CRON_SECRET) ──────────────────────────────
+# ── Admin: endpoints operacionais (autenticados por CRON_SECRET) ───────────
 
 @admin_bp.post("/cron/atualizar")
+@require_cron_secret
 def cron_atualizar():
-    secret = request.headers.get("X-Cron-Secret", "")
-    if secret != os.environ.get("CRON_SECRET", ""):
-        return jsonify({"erro": "não autorizado"}), 401
-
     buscar_noticias()
     buscar_cotacoes_todos_ativos(dias=1)
     n = aplicar_scores_em_lote(limite=500)
@@ -243,40 +209,8 @@ def cron_atualizar():
     return jsonify({"status": "ok", "scores_atualizados": n})
 
 
-# ── Admin: painel (role admin) ─────────────────────────────────────────────
-
-@admin_bp.get("/")
-@login_required
-@require_admin
-def painel():
-    total_users = User.query.count()
-    total_noticias = Noticia.query.count()
-    total_ativos = Ativo.query.count()
-    users_recentes = User.query.order_by(User.criado_em.desc()).limit(20).all()
-    subs_ativas = Subscription.query.filter_by(status="active").count()
-    planos = Plan.query.order_by(Plan.preco_mensal).all()
-
-    subs_por_plano = []
-    for p in planos:
-        count = Subscription.query.filter_by(
-            plan_id=p.id, status="active"
-        ).count()
-        subs_por_plano.append({"plano": p.display_nome, "total": count})
-
-    return render_template(
-        "admin/painel.html",
-        total_users=total_users,
-        total_noticias=total_noticias,
-        total_ativos=total_ativos,
-        users_recentes=users_recentes,
-        subs_ativas=subs_ativas,
-        subs_por_plano=subs_por_plano,
-    )
-
-
 @admin_bp.post("/scoring")
-@login_required
-@require_admin
+@require_cron_secret
 def rodar_scoring():
     buscar_cotacoes_todos_ativos(dias=90)
     n_noticias = aplicar_scores_em_lote(limite=1000)
@@ -303,8 +237,7 @@ def rodar_scoring():
 
 
 @admin_bp.post("/atualizar-completo")
-@login_required
-@require_admin
+@require_cron_secret
 def atualizar_completo():
     buscar_noticias()
     buscar_cotacoes_todos_ativos(dias=90)
@@ -319,8 +252,7 @@ def atualizar_completo():
 
 
 @admin_bp.get("/scores")
-@login_required
-@require_admin
+@require_cron_secret
 def listar_scores():
     noticias = (
         Noticia.query
@@ -341,8 +273,7 @@ def listar_scores():
 
 
 @admin_bp.get("/status")
-@login_required
-@require_admin
+@require_cron_secret
 def status():
     from .models import Cotacao, Correlacao
     return jsonify({
@@ -356,5 +287,4 @@ def status():
         "cotacoes": Cotacao.query.count(),
         "correlacoes": Correlacao.query.count(),
         "ativos": Ativo.query.count(),
-        "users": User.query.count(),
     })

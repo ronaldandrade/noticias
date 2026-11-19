@@ -1,5 +1,4 @@
 from flask import Blueprint, jsonify, request
-from ..decorators import require_api_key
 from ..models import Noticia, Ativo, Cotacao, Correlacao
 from .. import db
 from datetime import datetime, timedelta
@@ -32,7 +31,6 @@ def health():
 
 
 @api_bp.get("/noticias")
-@require_api_key
 def listar_noticias():
     """
     Retorna lista de notícias com sentimento.
@@ -99,7 +97,6 @@ def listar_noticias():
 
 
 @api_bp.get("/ativos")
-@require_api_key
 def listar_ativos():
     """Retorna todos os ativos monitorados."""
     ativos = Ativo.query.order_by(Ativo.ticker).all()
@@ -110,7 +107,6 @@ def listar_ativos():
 
 
 @api_bp.get("/ativos/<string:ticker>/sentimento")
-@require_api_key
 def sentimento_ativo(ticker):
     """
     Retorna série temporal de sentimento médio diário para um ativo.
@@ -149,7 +145,6 @@ def sentimento_ativo(ticker):
 
 
 @api_bp.get("/ativos/<string:ticker>/correlacao")
-@require_api_key
 def correlacao_ativo(ticker):
     """Retorna a correlação mais recente sentimento × retorno para um ativo."""
     ativo = Ativo.query.filter_by(ticker=ticker).first()
@@ -177,7 +172,6 @@ def correlacao_ativo(ticker):
 
 
 @api_bp.get("/ativos/<string:ticker>/cotacoes")
-@require_api_key
 def cotacoes_ativo(ticker):
     """
     Retorna preços históricos de um ativo.

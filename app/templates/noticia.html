@@ -292,13 +292,6 @@
   </a>
   <div class="topbar-sep"></div>
   <div class="topbar-user">
-    {% if current_user.is_authenticated %}
-      <span class="topbar-btn hide-sm" style="border:none;cursor:default;color:var(--text2)">
-        {{ current_user.nome or current_user.email }}
-      </span>
-      <a href="{{ url_for('auth.logout') }}" class="topbar-btn">Sair</a>
-    {% endif %}
-    <a href="{{ url_for('billing.planos') }}" class="topbar-btn hide-sm">Planos</a>
     <a href="/relatorio" class="topbar-btn accent">Relatório</a>
   </div>
 </div>
